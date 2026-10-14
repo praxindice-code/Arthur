@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArthurAI · Attack sequence explorer</title>
+  <style>
+/* BAYESGUARD_CSS */
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span> ArthurAI <span class="brand-suffix">/ explorer</span></div>
+      <h1>Watch an audit session turn suspicious</h1>
+      <p>Each event changes the model’s estimate of attack activity. Step through a simulated session and adjust when an alert fires.</p>
+    </header>
+
+    <section class="controls" aria-label="Explorer controls">
+      <label class="field scenario-field">Session
+        <select id="session-select"></select>
+      </label>
+      <label class="field threshold-field">Alert threshold <output id="threshold-value" for="threshold"></output>
+        <input id="threshold" type="range" min="0.25" max="0.95" step="0.05">
+      </label>
+      <label class="field streak-field">Consecutive events
+        <select id="streak">
+          <option value="1">1 event</option>
+          <option value="2">2 events</option>
+          <option value="3">3 events</option>
+          <option value="4">4 events</option>
+        </select>
+      </label>
+      <button id="play" type="button" class="play-button">▶ Play</button>
+    </section>
+
+    <section class="readout" aria-live="polite" aria-label="Current event">
+      <div class="readout-main">
+        <div class="eyebrow" id="step-label"></div>
+        <h2 id="event-name"></h2>
+        <div class="readout-note" id="event-note"></div>
+      </div>
+      <div class="readout-values">
+        <div><span class="metric-label">Attack risk</span><strong id="risk-value"></strong></div>
+        <div><span class="metric-label">Policy</span><strong id="alert-status"></strong></div>
+      </div>
+    </section>
+
+    <section class="plot-section" aria-labelledby="plot-title">
+      <div class="section-heading">
+        <h2 id="plot-title">Risk through the session</h2>
+        <div class="legend"><span class="legend-risk">Risk</span><span class="legend-threshold">Threshold</span><span class="legend-alert">Alert</span></div>
+      </div>
+      <svg id="risk-plot" role="img" aria-label="Risk by event"></svg>
+      <div class="step-control">
+        <label for="step">Event <output id="step-value" for="step"></output></label>
+        <input id="step" type="range" min="0" value="0">
+      </div>
+      <p class="plot-caption" id="session-summary"></p>
+    </section>
+
+    <section class="lower" aria-label="Event detail">
+      <div class="stage-section">
+        <h2>Model’s current state estimate</h2>
+        <div id="stage-bars" class="stage-bars"></div>
+      </div>
+      <div class="stream-section">
+        <h2>Event stream <span class="stream-hint">Select an event to inspect it</span></h2>
+        <div id="event-stream" class="event-stream"></div>
+      </div>
+    </section>
+
+    <footer>Offline demonstration using simulated cloud events and hand-set model probabilities. This view does not represent a production detection system.</footer>
+  </main>
+  <script id="bg-data" type="application/json">/* BAYESGUARD_DATA */</script>
+  <script>
+/* BAYESGUARD_JS */
+  </script>
+</body>
+</html>

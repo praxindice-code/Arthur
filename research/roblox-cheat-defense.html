@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArthurAI · Roblox cheat evolution</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --surface: #171717;
+  --surface-2: #252525;
+  --text: #f5f5f5;
+  --muted: #b5b5b5;
+  --line: #484848;
+  --risk: #f5f5f5;
+  --risk-soft: rgba(245, 245, 245, .12);
+  --threshold: #a0a0a0;
+  --attack: #c8c8c8;
+  --attack-soft: rgba(200, 200, 200, .09);
+  --alert: #ffffff;
+  --alert-soft: rgba(255, 255, 255, .13);
+  --safe: #b8b8b8;
+  --shadow: 0 8px 30px rgba(0, 0, 0, .22);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.48 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, select, input { font: inherit; }
+button, select { color: var(--text); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--risk); outline-offset: 3px; }
+.app { max-width: 1120px; margin: 0 auto; padding: 30px 28px 36px; }
+.masthead { margin-bottom: 24px; }
+.brand { display: flex; gap: 6px; align-items: center; color: var(--risk); font-weight: 700; letter-spacing: .02em; }
+.brand-mark { font-size: 23px; line-height: 1; }
+.brand-suffix { color: var(--muted); font-weight: 400; }
+h1 { font-size: clamp(25px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.12; margin: 12px 0 8px; }
+.masthead p { margin: 0; max-width: 730px; color: var(--muted); }
+h2 { font-size: 17px; letter-spacing: -.01em; margin: 0; }
+.controls { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 1.2fr) minmax(145px, .8fr) auto; gap: 14px; align-items: end; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 15px; box-shadow: var(--shadow); }
+.field { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.field output { color: var(--text); font-variant-numeric: tabular-nums; }
+select { height: 41px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); padding: 0 10px; min-width: 0; }
+input[type=range] { width: 100%; height: 40px; margin: 0; accent-color: var(--risk); }
+.play-button { height: 41px; border: 0; border-radius: 8px; background: var(--risk); color: var(--bg); font-weight: 700; padding: 0 18px; min-width: 92px; }
+.play-button:hover { filter: brightness(1.09); }
+.readout { display: flex; justify-content: space-between; gap: 18px; align-items: center; padding: 23px 0 20px; border-bottom: 1px solid var(--line); }
+.eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .09em; font-size: 11px; font-weight: 700; }
+.readout h2 { font-size: clamp(23px, 2.4vw, 30px); letter-spacing: -.025em; margin: 2px 0; }
+.readout-note { color: var(--muted); font-size: 13px; }
+.readout-values { display: flex; gap: 26px; flex-shrink: 0; }
+.readout-values > div { display: flex; flex-direction: column; min-width: 84px; }
+.metric-label { color: var(--muted); font-size: 12px; }
+.readout-values strong { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.is-alert { color: var(--alert); }
+.is-safe { color: var(--safe); }
+.plot-section { padding: 20px 0 16px; border-bottom: 1px solid var(--line); }
+.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.legend { display: flex; gap: 17px; color: var(--muted); font-size: 12px; }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; background: currentColor; }
+.legend-risk { color: var(--risk); }
+.legend-threshold { color: var(--threshold); }
+.legend-alert { color: var(--alert); }
+.legend-alert::before { height: 9px !important; width: 9px !important; background: var(--bg) !important; border: 2px solid currentColor; border-radius: 1px !important; transform: rotate(45deg); }
+#risk-plot { display: block; width: 100%; height: 266px; margin: 14px 0 0; overflow: visible; touch-action: manipulation; }
+.step-control { display: flex; gap: 15px; align-items: center; }
+.step-control label { white-space: nowrap; font-size: 13px; font-weight: 600; }
+.step-control output { font-variant-numeric: tabular-nums; }
+.step-control input { flex: 1; }
+.plot-caption { color: var(--muted); font-size: 12px; margin: 0; }
+.lower { display: grid; grid-template-columns: minmax(250px, .85fr) minmax(0, 1.35fr); gap: 30px; padding: 24px 0; }
+.stage-bars { display: grid; gap: 12px; margin-top: 18px; }
+.stage-row { display: grid; grid-template-columns: 98px minmax(0, 1fr) 42px; gap: 10px; align-items: center; font-size: 13px; }
+.stage-row strong { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.bar-track { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.bar-fill { height: 100%; background: var(--risk); border-radius: inherit; transition: width .15s ease; }
+.stage-row:first-child .bar-fill { background: var(--safe); }
+.stream-hint { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+.event-stream { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+.event-chip { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); padding: 5px 8px; font-size: 12px; line-height: 1.25; min-height: 38px; text-align: left; }
+.event-chip small { display: block; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.event-chip.attack-phase { background: var(--attack-soft); }
+.event-chip.alert-phase { border: 2px solid var(--alert); font-weight: 700; }
+.event-chip.selected { outline: 2px solid var(--risk); outline-offset: 1px; }
+.event-chip:hover { background: var(--surface-2); }
+footer { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 12px; }
+@media (max-width: 800px) {
+  .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .play-button { width: 100%; }
+  .lower { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .app { padding: 20px 16px; }
+  .controls { grid-template-columns: 1fr; }
+  .readout { align-items: flex-start; flex-direction: column; }
+  .readout-values { width: 100%; justify-content: space-between; }
+  .stage-row { grid-template-columns: 88px minmax(0,1fr) 42px; }
+}
+
+.guide { margin: 4px 0 20px; padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: var(--shadow); }
+.guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 22px; }
+.guide-grid p { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+.guide-grid strong { color: var(--text); }
+.guide-warning { margin: 14px 0 0; color: var(--attack); font-size: 12px; font-weight: 600; }
+.history { margin: 4px 0 24px; padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: var(--shadow); }
+.history-tag { color: var(--muted); font-size: 12px; }
+.timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+.milestone { padding: 14px; border-left: 3px solid var(--risk); border-radius: 8px; background: var(--surface-2); }
+.milestone time { color: var(--risk); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.milestone h3 { font-size: 14px; line-height: 1.3; margin: 7px 0; }
+.milestone p { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+.milestone a, .history-note a { color: var(--risk); font-size: 12px; font-weight: 600; }
+.history-note { color: var(--muted); font-size: 12px; margin: 14px 0 0; }
+.simulation-heading { margin: 8px 0 14px; }
+.simulation-heading p { color: var(--muted); font-size: 13px; margin: 5px 0 0; }
+@media (max-width: 950px) { .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) { .timeline, .guide-grid { grid-template-columns: 1fr; } }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span> ArthurAI <span class="brand-suffix">/ explorer</span></div>
+      <h1>Explore Roblox cheat defense over time</h1>
+      <p>A sourced timeline of Roblox’s anti-cheat response, paired with a hands-on model of server-side gameplay signals.</p>
+    </header>
+
+<section class="guide" aria-labelledby="guide-title"><h2 id="guide-title">What this tool actually does</h2><div class="guide-grid"><p><strong>1 · Read the record</strong><br>Browse dated Roblox announcements below. These are sourced facts, not model inputs.</p><p><strong>2 · Play a scenario</strong><br>Step through invented server-side gameplay events. No player or Roblox account is connected.</p><p><strong>3 · Watch the estimate</strong><br>Zig checks the event rows, then Rust updates a hand-configured sequential model. Its percentage is not calibrated for real players.</p><p><strong>4 · Change the alert rule</strong><br>The slider and consecutive-event setting change when an alert appears. Bayesian tuning is optional future work, not part of this run.</p></div><p class="guide-warning">This is a research demo, not a live anti-cheat, breach detector, or evidence for banning someone.</p></section><section class="history" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">Documented milestones</h2><span class="history-tag">Public Roblox statements · not an exhaustive cheat chronology</span></div><div class="timeline"><article class="milestone"><time datetime="2023-10-27">2023-10-27</time><h3>Exploit-prevention partnership</h3><p>Roblox announced a security partnership with Synapse Softworks and described enforcement against cheating and exploiting.</p><a href="https://devforum.roblox.com/t/exploit-prevention-update/2663101" target="_blank" rel="noopener noreferrer">Roblox source ↗</a></article><article class="milestone"><time datetime="2024-06-25">2024-06-25</time><h3>Ban API and alternate-account detection</h3><p>Roblox introduced creator-facing experience bans and alternate-account detection.</p><a href="https://devforum.roblox.com/t/introducing-the-ban-api-and-alt-account-detection/3039740/1" target="_blank" rel="noopener noreferrer">Roblox source ↗</a></article><article class="milestone"><time datetime="2025-01-08">2025-01-08</time><h3>Account farming and automated play</h3><p>Roblox identified account farming, accelerated play, and modified clients as concerns and described Hyperion, bot detection, and server-authority work.</p><a href="https://devforum.roblox.com/t/preventing-account-farming-and-exploits/3360580/1" target="_blank" rel="noopener noreferrer">Roblox source ↗</a></article><article class="milestone"><time datetime="2025-05-06">2025-05-06</time><h3>Automated action on modified clients</h3><p>Roblox said detected modified clients could trigger account action, including termination.</p><a href="https://devforum.roblox.com/t/an-update-on-automated-action-against-modified-clients/3640609" target="_blank" rel="noopener noreferrer">Roblox source ↗</a></article></div><p class="history-note">Roblox has not published a complete, dated inventory of cheat development. The categories below are a defensive simulation based on Roblox creator guidance, not claims that these exact incidents occurred on the dates above. <a href="https://create.roblox.com/docs/scripting/security/security-tactics" target="_blank" rel="noopener noreferrer">Security guidance ↗</a> · <a href="https://create.roblox.com/docs/scripting/security/client-server-boundary" target="_blank" rel="noopener noreferrer">Server validation ↗</a></p></section><section class="simulation-heading"><h2>Simulated server telemetry</h2><p>Select a scenario, then press Play. The shaded region marks synthetic cheat behavior; the risk curve is the model’s estimate, not a Roblox measurement.</p></section>
+    <section class="controls" aria-label="Explorer controls">
+      <label class="field scenario-field">Session
+        <select id="session-select"></select>
+      </label>
+      <label class="field threshold-field">Alert threshold <output id="threshold-value" for="threshold"></output>
+        <input id="threshold" type="range" min="0.25" max="0.95" step="0.05">
+      </label>
+      <label class="field streak-field">Consecutive events
+        <select id="streak">
+          <option value="1">1 event</option>
+          <option value="2">2 events</option>
+          <option value="3">3 events</option>
+          <option value="4">4 events</option>
+        </select>
+      </label>
+      <button id="play" type="button" class="play-button">▶ Play</button>
+    </section>
+
+    <section class="readout" aria-live="polite" aria-label="Current event">
+      <div class="readout-main">
+        <div class="eyebrow" id="step-label"></div>
+        <h2 id="event-name"></h2>
+        <div class="readout-note" id="event-note"></div>
+      </div>
+      <div class="readout-values">
+        <div><span class="metric-label">Model score</span><strong id="risk-value"></strong></div>
+        <div><span class="metric-label">Policy</span><strong id="alert-status"></strong></div>
+      </div>
+    </section>
+
+    <section class="plot-section" aria-labelledby="plot-title">
+      <div class="section-heading">
+        <h2 id="plot-title">Risk through the session</h2>
+        <div class="legend"><span class="legend-risk">Risk</span><span class="legend-threshold">Threshold</span><span class="legend-alert">Alert</span></div>
+      </div>
+      <svg id="risk-plot" role="img" aria-label="Risk by event"></svg>
+      <div class="step-control">
+        <label for="step">Event <output id="step-value" for="step"></output></label>
+        <input id="step" type="range" min="0" value="0">
+      </div>
+      <p class="plot-caption" id="session-summary"></p>
+    </section>
+
+    <section class="lower" aria-label="Event detail">
+      <div class="stage-section">
+        <h2>Model’s current state estimate</h2>
+        <div id="stage-bars" class="stage-bars"></div>
+      </div>
+      <div class="stream-section">
+        <h2>Event stream <span class="stream-hint">Select an event to inspect it</span></h2>
+        <div id="event-stream" class="event-stream"></div>
+      </div>
+    </section>
+
+    <footer>Offline defensive prototype. Model probabilities are hand-set and uncalibrated. Do not sanction players from its output.</footer>
+  </main>
+  <script id="bg-data" type="application/json">{"seed":42,"threshold":0.5,"streak":2,"states":["normal","movement","remote_abuse","automation"],"scenarios":[{"id":"r0000-benign","label":"benign","attack_start":null,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"move_ok","risk":0.00698927,"posterior":[0.99301073,0.0029145,0.00201415,0.00206062]},{"kind":"move_ok","risk":0.00725432,"posterior":[0.99274568,0.00302562,0.00208155,0.00214715]},{"kind":"latency_spike","risk":0.01581387,"posterior":[0.98418613,0.00856657,0.00420402,0.00304328]},{"kind":"action_ok","risk":0.01005373,"posterior":[0.98994627,0.00449246,0.00273236,0.00282891]},{"kind":"remote_reject","risk":0.13548663,"posterior":[0.86451337,0.02989886,0.08492331,0.02066447]},{"kind":"move_ok","risk":0.03644796,"posterior":[0.96355204,0.00977877,0.01950283,0.00716636]},{"kind":"action_ok","risk":0.01481293,"posterior":[0.98518707,0.00488296,0.00592682,0.00400316]},{"kind":"latency_spike","risk":0.01905615,"posterior":[0.98094385,0.00972416,0.00568837,0.00364362]},{"kind":"move_ok","risk":0.00985728,"posterior":[0.99014272,0.00448918,0.00282529,0.00254281]},{"kind":"move_ok","risk":0.00787092,"posterior":[0.99212908,0.00336218,0.00224563,0.0022631]},{"kind":"action_ok","risk":0.00819828,"posterior":[0.99180172,0.00331405,0.00229575,0.00258848]},{"kind":"move_ok","risk":0.00751705,"posterior":[0.99248295,0.00311313,0.002139,0.00226492]},{"kind":"move_ok","risk":0.00736877,"posterior":[0.99263123,0.00306877,0.00210702,0.00219299]},{"kind":"action_ok","risk":0.00808136,"posterior":[0.99191864,0.00324774,0.00226546,0.00256816]},{"kind":"action_ok","risk":0.00825651,"posterior":[0.99174349,0.00329013,0.00230032,0.00266605]},{"kind":"move_ok","risk":0.00753019,"posterior":[0.99246981,0.0031085,0.00214003,0.00228167]}]},{"id":"r0001-movement","label":"cheat","attack_start":10,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"movement_violation","risk":0.13194889,"posterior":[0.86805111,0.10394794,0.01881427,0.00918668]},{"kind":"latency_spike","risk":0.08862919,"posterior":[0.91137081,0.07070443,0.01196638,0.00595838]},{"kind":"move_ok","risk":0.02611269,"posterior":[0.97388731,0.01816566,0.004519,0.00342803]},{"kind":"action_ok","risk":0.01251962,"posterior":[0.98748038,0.00666835,0.00286583,0.00298544]},{"kind":"move_ok","risk":0.00846215,"posterior":[0.99153785,0.00382339,0.00226872,0.00237004]},{"kind":"move_ok","risk":0.00757476,"posterior":[0.99242524,0.00321884,0.00213616,0.00221975]},{"kind":"latency_spike","risk":0.01597508,"posterior":[0.98402492,0.00868118,0.00422715,0.00306674]},{"kind":"move_ok","risk":0.00919967,"posterior":[0.99080033,0.00425651,0.00253895,0.00240421]},{"kind":"action_ok","risk":0.00850831,"posterior":[0.99149169,0.00351544,0.0023617,0.00263117]},{"kind":"remote_reject","risk":0.13092641,"posterior":[0.86907359,0.02818932,0.08241202,0.02032506]},{"kind":"movement_violation","risk":0.39097873,"posterior":[0.60902127,0.24073451,0.1275598,0.02268443]},{"kind":"remote_reject","risk":0.73580591,"posterior":[0.26419409,0.22229275,0.48091699,0.03259617]},{"kind":"movement_violation","risk":0.90599425,"posterior":[0.09400575,0.5986725,0.2909081,0.01641365]},{"kind":"movement_violation","risk":0.97263826,"posterior":[0.02736174,0.86187129,0.10398744,0.00677953]},{"kind":"repetitive_timing","risk":0.95838125,"posterior":[0.04161875,0.75765894,0.07176163,0.12896068]},{"kind":"movement_violation","risk":0.98334257,"posterior":[0.01665743,0.93123622,0.02878587,0.02332047]},{"kind":"movement_violation","risk":0.98830522,"posterior":[0.01169478,0.96749896,0.0147987,0.00600756]},{"kind":"remote_reject","risk":0.96467817,"posterior":[0.03532183,0.79158745,0.14946819,0.02362253]},{"kind":"movement_violation","risk":0.98467041,"posterior":[0.01532959,0.92945123,0.04845317,0.00676601]},{"kind":"reward_mismatch","risk":0.93753887,"posterior":[0.06246113,0.67918855,0.2151529,0.04319743]},{"kind":"movement_violation","risk":0.9792325,"posterior":[0.0207675,0.89519529,0.07330988,0.01072733]}]},{"id":"r0002-remote","label":"cheat","attack_start":6,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"move_ok","risk":0.00698927,"posterior":[0.99301073,0.0029145,0.00201415,0.00206062]},{"kind":"move_ok","risk":0.00725432,"posterior":[0.99274568,0.00302562,0.00208155,0.00214715]},{"kind":"move_ok","risk":0.0073116,"posterior":[0.9926884,0.00304962,0.00209523,0.00216675]},{"kind":"move_ok","risk":0.007324,"posterior":[0.992676,0.0030548,0.00209802,0.00217118]},{"kind":"move_ok","risk":0.00732669,"posterior":[0.99267331,0.00305592,0.00209859,0.00217218]},{"kind":"remote_reject","risk":0.12751068,"posterior":[0.87248932,0.02739872,0.08063616,0.0194758]},{"kind":"reward_mismatch","risk":0.35225252,"posterior":[0.64774748,0.03255383,0.27110654,0.04859214]},{"kind":"action_ok","risk":0.10940955,"posterior":[0.89059045,0.01397999,0.0749387,0.02049087]},{"kind":"remote_reject","risk":0.47436402,"posterior":[0.52563598,0.03309232,0.40317141,0.0381003]},{"kind":"remote_reject","risk":0.86506002,"posterior":[0.13493998,0.02544557,0.81189991,0.02771454]},{"kind":"remote_reject","risk":0.97222406,"posterior":[0.02777594,0.01397782,0.94345109,0.01479514]},{"kind":"remote_reject","risk":0.98782712,"posterior":[0.01217288,0.00970566,0.96809174,0.01002973]},{"kind":"move_ok","risk":0.70203335,"posterior":[0.29796665,0.02434238,0.65288142,0.02480956]},{"kind":"remote_reject","risk":0.94127003,"posterior":[0.05872997,0.01564966,0.909868,0.01575237]},{"kind":"remote_reject","risk":0.98375428,"posterior":[0.01624572,0.01035769,0.96291742,0.01047917]},{"kind":"movement_violation","risk":0.96287147,"posterior":[0.03712853,0.12052762,0.82708385,0.01526]},{"kind":"remote_reject","risk":0.98534179,"posterior":[0.01465821,0.04103657,0.93323029,0.01107493]}]},{"id":"r0003-automation","label":"cheat","attack_start":8,"events":[{"kind":"repetitive_timing","risk":0.11323329,"posterior":[0.88676671,0.02273761,0.01091405,0.07958163]},{"kind":"action_ok","risk":0.03716997,"posterior":[0.96283003,0.00840844,0.00468223,0.0240793]},{"kind":"action_ok","risk":0.01583652,"posterior":[0.98416348,0.00457962,0.00292865,0.00832825]},{"kind":"action_ok","risk":0.01024811,"posterior":[0.98975189,0.00361925,0.00246904,0.00415982]},{"kind":"movement_violation","risk":0.14376311,"posterior":[0.85623689,0.11217374,0.02010516,0.01148421]},{"kind":"latency_spike","risk":0.09550959,"posterior":[0.90449041,0.07612101,0.01262548,0.00676309]},{"kind":"move_ok","risk":0.02781527,"posterior":[0.97218473,0.01946198,0.0047023,0.00365099]},{"kind":"move_ok","risk":0.01185481,"posterior":[0.98814519,0.00656428,0.00270248,0.00258806]},{"kind":"remote_reject","risk":0.13874194,"posterior":[0.86125806,0.03364936,0.08487575,0.02021682]},{"kind":"move_ok","risk":0.03731284,"posterior":[0.96268716,0.01066204,0.01956014,0.00709066]},{"kind":"repetitive_timing","risk":0.21546348,"posterior":[0.78453652,0.04049896,0.03197061,0.14299391]},{"kind":"repetitive_timing","risk":0.70594306,"posterior":[0.29405694,0.04395746,0.0219727,0.64001289]},{"kind":"repetitive_timing","risk":0.95746783,"posterior":[0.04253217,0.01752736,0.00696166,0.93297881]},{"kind":"action_ok","risk":0.713837,"posterior":[0.286163,0.02482677,0.01646593,0.6725443]},{"kind":"reward_mismatch","risk":0.84118975,"posterior":[0.15881025,0.02353906,0.0690041,0.74864659]},{"kind":"repetitive_timing","risk":0.97674698,"posterior":[0.02325302,0.01081723,0.01323797,0.95269178]},{"kind":"repetitive_timing","risk":0.99252987,"posterior":[0.00747013,0.00662635,0.00430308,0.98160044]},{"kind":"action_ok","risk":0.79327036,"posterior":[0.20672964,0.01971152,0.01626171,0.75729713]},{"kind":"action_ok","risk":0.45165104,"posterior":[0.54834896,0.0190426,0.01554897,0.41705947]},{"kind":"repetitive_timing","risk":0.89641747,"posterior":[0.10358253,0.01414015,0.00749901,0.87477831]}]},{"id":"r0004-benign","label":"benign","attack_start":null,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"action_ok","risk":0.00769784,"posterior":[0.99230216,0.00309445,0.00217245,0.00243094]},{"kind":"remote_reject","risk":0.12854502,"posterior":[0.87145498,0.02745458,0.08112855,0.01996189]},{"kind":"action_ok","risk":0.03788026,"posterior":[0.96211974,0.00969743,0.02001724,0.00816559]},{"kind":"move_ok","risk":0.0138181,"posterior":[0.9861819,0.00459324,0.00560433,0.00362054]},{"kind":"repetitive_timing","risk":0.16071382,"posterior":[0.83928618,0.03061186,0.01711811,0.11298385]},{"kind":"action_ok","risk":0.05164849,"posterior":[0.94835151,0.01076461,0.00638987,0.03449401]},{"kind":"move_ok","risk":0.0174859,"posterior":[0.9825141,0.00489911,0.00311408,0.00947272]},{"kind":"move_ok","risk":0.00959703,"posterior":[0.99040297,0.00348392,0.00233176,0.00378136]},{"kind":"move_ok","risk":0.00783138,"posterior":[0.99216862,0.00315452,0.00215168,0.00252519]},{"kind":"action_ok","risk":0.008199,"posterior":[0.991801,0.00326862,0.00227648,0.0026539]},{"kind":"latency_spike","risk":0.01620105,"posterior":[0.98379895,0.0087172,0.00428377,0.00320008]},{"kind":"action_ok","risk":0.01014867,"posterior":[0.98985133,0.00452765,0.0027504,0.00287062]},{"kind":"move_ok","risk":0.00793883,"posterior":[0.99206117,0.00337149,0.00223314,0.0023342]},{"kind":"action_ok","risk":0.00821665,"posterior":[0.99178335,0.0033164,0.00229358,0.00260666]},{"kind":"repetitive_timing","risk":0.14565004,"posterior":[0.85434996,0.02847868,0.01341321,0.10375814]},{"kind":"action_ok","risk":0.04702687,"posterior":[0.95297313,0.01008573,0.00545549,0.03148565]},{"kind":"repetitive_timing","risk":0.35326519,"posterior":[0.64673481,0.03302807,0.01395635,0.30628076]},{"kind":"movement_violation","risk":0.54799106,"posterior":[0.45200894,0.2766671,0.03765707,0.23366689]},{"kind":"move_ok","risk":0.20149591,"posterior":[0.79850409,0.09821182,0.01717844,0.08610566]}]},{"id":"r0005-movement","label":"cheat","attack_start":6,"events":[{"kind":"action_ok","risk":0.0063413,"posterior":[0.9936587,0.00254784,0.0018118,0.00198166]},{"kind":"action_ok","risk":0.00784056,"posterior":[0.99215944,0.00312948,0.00220143,0.00250965]},{"kind":"move_ok","risk":0.00743993,"posterior":[0.99256007,0.00307362,0.00211983,0.00224648]},{"kind":"action_ok","risk":0.00809939,"posterior":[0.99190061,0.00324913,0.00226831,0.00258195]},{"kind":"move_ok","risk":0.00749583,"posterior":[0.99250417,0.00309936,0.00213342,0.00226306]},{"kind":"action_ok","risk":0.00811271,"posterior":[0.99188729,0.003255,0.0022713,0.00258641]},{"kind":"move_ok","risk":0.00749873,"posterior":[0.99250127,0.00310062,0.00213404,0.00226407]},{"kind":"movement_violation","risk":0.13790339,"posterior":[0.86209661,0.10864641,0.01954474,0.00971224]},{"kind":"movement_violation","risk":0.55870241,"posterior":[0.44129759,0.51626889,0.03164591,0.0107876]},{"kind":"repetitive_timing","risk":0.76021002,"posterior":[0.23978998,0.57418639,0.03593525,0.15008838]},{"kind":"movement_violation","risk":0.94649493,"posterior":[0.05350507,0.89178043,0.02187624,0.03283825]},{"kind":"movement_violation","risk":0.98361718,"posterior":[0.01638282,0.96273158,0.01342467,0.00746093]},{"kind":"move_ok","risk":0.69183048,"posterior":[0.30816952,0.6439476,0.02763644,0.02024644]},{"kind":"movement_violation","risk":0.93996773,"posterior":[0.06003227,0.91571005,0.01739913,0.00685854]},{"kind":"remote_reject","risk":0.94665005,"posterior":[0.05334995,0.76559709,0.15681586,0.02423711]},{"kind":"movement_violation","risk":0.98196155,"posterior":[0.01803845,0.92336061,0.05160312,0.00699782]},{"kind":"action_ok","risk":0.70186263,"posterior":[0.29813737,0.62809715,0.05128228,0.0224832]},{"kind":"movement_violation","risk":0.94063038,"posterior":[0.05936962,0.9078116,0.02542205,0.00739674]},{"kind":"action_ok","risk":0.61952485,"posterior":[0.38047515,0.56687473,0.03215709,0.02049303]}]},{"id":"r0006-remote","label":"cheat","attack_start":10,"events":[{"kind":"remote_reject","risk":0.10369553,"posterior":[0.89630447,0.02206288,0.06618864,0.01544402]},{"kind":"action_ok","risk":0.03126597,"posterior":[0.96873403,0.00818721,0.01637947,0.0066993]},{"kind":"action_ok","risk":0.01360621,"posterior":[0.98639379,0.0044989,0.00525751,0.0038498]},{"kind":"move_ok","risk":0.00865229,"posterior":[0.99134771,0.00338251,0.00270998,0.0025598]},{"kind":"action_ok","risk":0.0083807,"posterior":[0.9916193,0.0033223,0.00239124,0.00266716]},{"kind":"repetitive_timing","risk":0.14630191,"posterior":[0.85369809,0.02847602,0.01352018,0.1043057]},{"kind":"latency_spike","risk":0.07313573,"posterior":[0.92686427,0.02618005,0.0100021,0.03695358]},{"kind":"move_ok","risk":0.02254216,"posterior":[0.97745784,0.00834824,0.00395112,0.0102428]},{"kind":"move_ok","risk":0.01071607,"posterior":[0.98928393,0.0042238,0.00251591,0.00397636]},{"kind":"action_ok","risk":0.00891351,"posterior":[0.99108649,0.00351581,0.00236364,0.00303407]},{"kind":"move_ok","risk":0.00767568,"posterior":[0.99232432,0.00315786,0.00215481,0.00236301]},{"kind":"remote_reject","risk":0.12842474,"posterior":[0.87157526,0.02757375,0.08101658,0.01983442]},{"kind":"move_ok","risk":0.03467369,"posterior":[0.96532631,0.0091827,0.01858218,0.0069088]},{"kind":"remote_reject","risk":0.24007054,"posterior":[0.75992946,0.03508343,0.17883596,0.02615115]},{"kind":"remote_reject","risk":0.68942208,"posterior":[0.31057792,0.04152862,0.61530338,0.03259009]},{"kind":"action_ok","risk":0.29666021,"posterior":[0.70333979,0.02613449,0.2456889,0.02483682]},{"kind":"remote_reject","risk":0.75633484,"posterior":[0.24366516,0.02911909,0.70013935,0.0270764]},{"kind":"remote_reject","risk":0.9525891,"posterior":[0.0474109,0.0165721,0.92009307,0.01592393]},{"kind":"movement_violation","risk":0.95047307,"posterior":[0.04952693,0.14153503,0.79135956,0.01757847]},{"kind":"reward_mismatch","risk":0.96748755,"posterior":[0.03251245,0.04895629,0.89414218,0.02438908]}]},{"id":"r0007-automation","label":"cheat","attack_start":9,"events":[{"kind":"repetitive_timing","risk":0.11323329,"posterior":[0.88676671,0.02273761,0.01091405,0.07958163]},{"kind":"reward_mismatch","risk":0.26858919,"posterior":[0.73141081,0.03193721,0.07202609,0.16462589]},{"kind":"latency_spike","risk":0.13009448,"posterior":[0.86990552,0.03161834,0.03681419,0.06166195]},{"kind":"action_ok","risk":0.04068436,"posterior":[0.95931564,0.01068404,0.01042459,0.01957573]},{"kind":"latency_spike","risk":0.02958967,"posterior":[0.97041033,0.01343978,0.00761376,0.00853613]},{"kind":"action_ok","risk":0.01344821,"posterior":[0.98655179,0.00564913,0.00349413,0.00430495]},{"kind":"action_ok","risk":0.00954725,"posterior":[0.99045275,0.00384114,0.00257346,0.00313266]},{"kind":"action_ok","risk":0.00861144,"posterior":[0.99138856,0.00342659,0.0023691,0.00281575]},{"kind":"remote_reject","risk":0.13115269,"posterior":[0.86884731,0.0280242,0.08245362,0.02067486]},{"kind":"action_ok","risk":0.03860246,"posterior":[0.96139754,0.00986008,0.0203542,0.00838818]},{"kind":"action_ok","risk":0.01535893,"posterior":[0.98464107,0.00491417,0.0061145,0.00433026]},{"kind":"movement_violation","risk":0.15818668,"posterior":[0.84181332,0.12049837,0.02611587,0.01157243]},{"kind":"repetitive_timing","risk":0.40892645,"posterior":[0.59107355,0.2022547,0.0360039,0.17066785]},{"kind":"action_ok","risk":0.14412611,"posterior":[0.85587389,0.06575827,0.01453489,0.06383295]},{"kind":"action_ok","risk":0.04524137,"posterior":[0.95475863,0.01902988,0.00578599,0.02042549]},{"kind":"move_ok","risk":0.0159241,"posterior":[0.9840759,0.00660098,0.00298621,0.00633691]},{"kind":"repetitive_timing","risk":0.18323512,"posterior":[0.81676488,0.03352217,0.0138447,0.13586824]},{"kind":"action_ok","risk":0.0592707,"posterior":[0.9407293,0.01173547,0.00584069,0.04169453]},{"kind":"repetitive_timing","risk":0.40542853,"posterior":[0.59457147,0.03319289,0.01346897,0.35876667]},{"kind":"repetitive_timing","risk":0.87523307,"posterior":[0.12476693,0.02179813,0.00770937,0.84572557]},{"kind":"move_ok","risk":0.52549634,"posterior":[0.47450366,0.02382895,0.0142213,0.48744609]},{"kind":"action_ok","risk":0.21790207,"posterior":[0.78209793,0.01403221,0.00945477,0.19441509]}]},{"id":"r0008-benign","label":"benign","attack_start":null,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"move_ok","risk":0.00698927,"posterior":[0.99301073,0.0029145,0.00201415,0.00206062]},{"kind":"reward_mismatch","risk":0.07834139,"posterior":[0.92165861,0.01492264,0.04223888,0.02117987]},{"kind":"action_ok","risk":0.02529131,"posterior":[0.97470869,0.00632554,0.01098229,0.00798348]},{"kind":"action_ok","risk":0.01232112,"posterior":[0.98767888,0.00405344,0.00413137,0.00413631]},{"kind":"latency_spike","risk":0.0178879,"posterior":[0.9821121,0.00921716,0.00500248,0.00366826]},{"kind":"latency_spike","risk":0.02120216,"posterior":[0.97879784,0.0122586,0.00538421,0.00355935]},{"kind":"move_ok","risk":0.01034541,"posterior":[0.98965459,0.00502598,0.00278405,0.00253538]},{"kind":"move_ok","risk":0.00797982,"posterior":[0.99202018,0.0034748,0.00224119,0.00226383]},{"kind":"latency_spike","risk":0.01618466,"posterior":[0.98381534,0.00883279,0.00426969,0.00308217]},{"kind":"action_ok","risk":0.01014149,"posterior":[0.98985851,0.00455288,0.00274778,0.00284082]},{"kind":"action_ok","risk":0.00873862,"posterior":[0.99126138,0.00358478,0.00240793,0.00274591]},{"kind":"action_ok","risk":0.00841318,"posterior":[0.99158682,0.00336675,0.00233217,0.00271425]},{"kind":"latency_spike","risk":0.01630161,"posterior":[0.98369839,0.00877605,0.00430622,0.00321933]},{"kind":"action_ok","risk":0.01017264,"posterior":[0.98982736,0.00454112,0.00275548,0.00287605]},{"kind":"repetitive_timing","risk":0.15082489,"posterior":[0.84917511,0.03068902,0.01393336,0.10620252]},{"kind":"move_ok","risk":0.04286989,"posterior":[0.95713011,0.01010616,0.00523104,0.0275327]},{"kind":"action_ok","risk":0.01733273,"posterior":[0.98266727,0.00499164,0.00307168,0.00926941]},{"kind":"move_ok","risk":0.0095627,"posterior":[0.9904373,0.00350226,0.00232346,0.00373698]},{"kind":"movement_violation","risk":0.14233318,"posterior":[0.85766682,0.11138291,0.0198601,0.01109017]}]},{"id":"r0009-movement","label":"cheat","attack_start":7,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"action_ok","risk":0.00769784,"posterior":[0.99230216,0.00309445,0.00217245,0.00243094]},{"kind":"move_ok","risk":0.00740872,"posterior":[0.99259128,0.00306577,0.00211386,0.00222909]},{"kind":"move_ok","risk":0.0073453,"posterior":[0.9926547,0.00305856,0.00210187,0.00218487]},{"kind":"action_ok","risk":0.00807572,"posterior":[0.99192428,0.0032454,0.00226431,0.002566]},{"kind":"remote_reject","risk":0.12967217,"posterior":[0.87032783,0.02771387,0.08174802,0.02021028]},{"kind":"move_ok","risk":0.03498606,"posterior":[0.96501394,0.00922666,0.01875187,0.00700753]},{"kind":"move_ok","risk":0.01317729,"posterior":[0.98682271,0.00447781,0.00534677,0.00335271]},{"kind":"movement_violation","risk":0.15319412,"posterior":[0.84680588,0.1176489,0.02486566,0.01067956]},{"kind":"movement_violation","risk":0.58171289,"posterior":[0.41828711,0.53481436,0.03587608,0.01102246]},{"kind":"move_ok","risk":0.21867474,"posterior":[0.78132526,0.19057507,0.01827049,0.00982918]},{"kind":"move_ok","risk":0.06166286,"posterior":[0.93833714,0.04937097,0.00705011,0.00524178]},{"kind":"movement_violation","risk":0.37572556,"posterior":[0.62427444,0.34266312,0.02294977,0.01011267]},{"kind":"latency_spike","risk":0.26083016,"posterior":[0.73916984,0.23548428,0.01732314,0.00802274]},{"kind":"movement_violation","risk":0.74151597,"posterior":[0.25848403,0.71230525,0.02190805,0.00730266]},{"kind":"movement_violation","risk":0.95150842,"posterior":[0.04849158,0.93241324,0.01477908,0.0043161]},{"kind":"reward_mismatch","risk":0.9109667,"posterior":[0.0890333,0.7337763,0.13532199,0.04186841]},{"kind":"reward_mismatch","risk":0.90991236,"posterior":[0.09008764,0.45962081,0.37065862,0.07963292]},{"kind":"action_ok","risk":0.56775644,"posterior":[0.43224356,0.28507743,0.21395585,0.06872317]},{"kind":"move_ok","risk":0.20608852,"posterior":[0.79391148,0.10401314,0.07189579,0.03017959]},{"kind":"movement_violation","risk":0.59736995,"posterior":[0.40263005,0.49206229,0.08312369,0.02218397]}]},{"id":"r0010-remote","label":"cheat","attack_start":9,"events":[{"kind":"move_ok","risk":0.0057585,"posterior":[0.9942415,0.00239938,0.00167956,0.00167956]},{"kind":"action_ok","risk":0.00769784,"posterior":[0.99230216,0.00309445,0.00217245,0.00243094]},{"kind":"latency_spike","risk":0.01598301,"posterior":[0.98401699,0.00861132,0.00424109,0.00313059]},{"kind":"latency_spike","risk":0.02035631,"posterior":[0.97964369,0.01188411,0.00508543,0.00338677]},{"kind":"action_ok","risk":0.01112617,"posterior":[0.98887383,0.00524718,0.00293733,0.00294165]},{"kind":"action_ok","risk":0.00896954,"posterior":[0.99103046,0.00374129,0.0024515,0.00277676]},{"kind":"move_ok","risk":0.00768466,"posterior":[0.99231534,0.0032044,0.00217167,0.00230859]},{"kind":"move_ok","risk":0.00740519,"posterior":[0.99259481,0.00308826,0.00211389,0.00220305]},{"kind":"move_ok","risk":0.00734438,"posterior":[0.99265562,0.00306315,0.0021019,0.00217933]},{"kind":"remote_reject","risk":0.12755915,"posterior":[0.87244085,0.02741133,0.08065869,0.01948913]},{"kind":"remote_reject","risk":0.50147422,"posterior":[0.49852578,0.04812249,0.41743064,0.03592108]},{"kind":"move_ok","risk":0.1630177,"posterior":[0.8369823,0.02112555,0.12484263,0.01704953]},{"kind":"remote_reject","risk":0.59144159,"posterior":[0.40855841,0.03505837,0.5277994,0.02858382]},{"kind":"remote_reject","risk":0.91055036,"posterior":[0.08944964,0.02231383,0.8687887,0.01944783]},{"kind":"reward_mismatch","risk":0.960015,"posterior":[0.039985,0.0126036,0.92360849,0.02380291]},{"kind":"action_ok","risk":0.65539273,"posterior":[0.34460727,0.02461987,0.59429075,0.03648212]},{"kind":"repetitive_timing","risk":0.79590677,"posterior":[0.20409323,0.05009536,0.42754727,0.31826415]},{"kind":"move_ok","risk":0.39497068,"posterior":[0.60502932,0.03419725,0.19277048,0.16800296]},{"kind":"action_ok","risk":0.13402314,"posterior":[0.86597686,0.01511329,0.0564601,0.06244976]},{"kind":"remote_reject","risk":0.46474592,"posterior":[0.53525408,0.03641461,0.33242911,0.0959022]},{"kind":"remote_reject","risk":0.84724525,"posterior":[0.15275475,0.03018623,0.75255854,0.06450048]},{"kind":"latency_spike","risk":0.616946,"posterior":[0.383054,0.05420704,0.51681508,0.04592388]},{"kind":"action_ok","risk":0.24388336,"posterior":[0.75611664,0.02823347,0.18771256,0.02793734]},{"kind":"reward_mismatch","risk":0.54888625,"posterior":[0.45111375,0.02723984,0.46968151,0.0519649]}]},{"id":"r0011-automation","label":"cheat","attack_start":7,"events":[{"kind":"action_ok","risk":0.0063413,"posterior":[0.9936587,0.00254784,0.0018118,0.00198166]},{"kind":"move_ok","risk":0.00711597,"posterior":[0.99288403,0.00294754,0.00204105,0.00212738]},{"kind":"move_ok","risk":0.00728195,"posterior":[0.99271805,0.00303298,0.00208707,0.00216191]},{"kind":"action_ok","risk":0.00806049,"posterior":[0.99193951,0.00323953,0.00226105,0.00255991]},{"kind":"action_ok","risk":0.00825145,"posterior":[0.99174855,0.00328825,0.00229934,0.00266387]},{"kind":"move_ok","risk":0.00752909,"posterior":[0.99247091,0.00310809,0.00213982,0.00228118]},{"kind":"move_ok","risk":0.00737149,"posterior":[0.99262851,0.00306779,0.00210721,0.0021965]},{"kind":"repetitive_timing","risk":0.14141444,"posterior":[0.85858556,0.02811006,0.01323659,0.10006778]},{"kind":"action_ok","risk":0.04569076,"posterior":[0.95430924,0.00995346,0.00538601,0.03035128]},{"kind":"remote_reject","risk":0.20973302,"posterior":[0.79026698,0.03843759,0.10159596,0.06969946]},{"kind":"repetitive_timing","risk":0.59417065,"posterior":[0.40582935,0.05787099,0.07700803,0.45929163]},{"kind":"movement_violation","risk":0.75145099,"posterior":[0.24854901,0.35869725,0.10438076,0.28837298]},{"kind":"movement_violation","risk":0.92535298,"posterior":[0.07464702,0.78149291,0.06188964,0.08197042]},{"kind":"repetitive_timing","risk":0.95358104,"posterior":[0.04641896,0.54874145,0.03890268,0.36593692]},{"kind":"move_ok","risk":0.64494378,"posterior":[0.35505622,0.35663988,0.03774244,0.25056146]},{"kind":"remote_reject","risk":0.82121933,"posterior":[0.17878067,0.34947433,0.21381274,0.25793226]},{"kind":"repetitive_timing","risk":0.946992,"posterior":[0.053008,0.17953086,0.07085208,0.69660906]},{"kind":"repetitive_timing","risk":0.98683958,"posterior":[0.01316042,0.05018837,0.01449037,0.92216084]},{"kind":"move_ok","risk":0.74787486,"posterior":[0.25212514,0.05068166,0.0233692,0.67382399]},{"kind":"action_ok","risk":0.39786166,"posterior":[0.60213834,0.03122573,0.01733098,0.34930495]},{"kind":"latency_spike","risk":0.19189507,"posterior":[0.80810493,0.03568405,0.0155018,0.14070922]},{"kind":"repetitive_timing","risk":0.69321463,"posterior":[0.30678537,0.04049122,0.01388447,0.63883894]}]}],"notes":{"move_ok":"Movement remained within the game's server-side rules.","action_ok":"Action passed server-side validation.","latency_spike":"Network jitter is common and should not prove cheating by itself.","movement_violation":"A server-side movement check observed an impossible or implausible step.","remote_reject":"The server rejected a client-requested action after validation.","reward_mismatch":"A reward or progression request conflicts with server-held state.","repetitive_timing":"Action timing is unusually repetitive; accessibility tools can also produce patterns."},"state_names":{"normal":"Normal","movement":"Movement abuse","remote_abuse":"Invalid requests","automation":"Automation"},"phase_label":"cheat","event_fallback":"Server-side gameplay signal","data_origin":"synthetic"}</script>
+  <script>
+(() => {
+  "use strict";
+  const data = JSON.parse(document.getElementById("bg-data").textContent);
+  const $ = (id) => document.getElementById(id);
+  const svgNS = "http://www.w3.org/2000/svg";
+  const defaultNotes = {
+    login_ok: "Successful sign-in. Common in ordinary sessions.",
+    list_objects: "Lists cloud objects. Usually routine by itself.",
+    read_object: "Reads one cloud object. Often normal activity.",
+    logout: "Session ends or changes context.",
+    list_users: "Enumerates identities. Can be administration or reconnaissance.",
+    login_fail: "Failed sign-in. Repeated failures strengthen credential-abuse evidence.",
+    assume_role: "Switches privileges. Could be authorized administration or escalation.",
+    read_secret: "Accesses a secret. Sensitive, but sometimes legitimate.",
+    bulk_download: "Downloads many objects. Could be backup work or exfiltration."
+  };
+  const defaultStateNames = {
+    normal: "Normal", recon: "Recon", credential: "Credential",
+    privilege: "Privilege", exfil: "Exfiltration"
+  };
+  const notes = data.notes || defaultNotes;
+  const stateNames = data.state_names || defaultStateNames;
+  const phaseLabel = data.phase_label || "attack";
+  const eventFallback = data.event_fallback || "Cloud audit event";
+  let scenarioIndex = Math.max(0, data.scenarios.findIndex(s => s.attack_start !== null));
+  let step = 0;
+  let threshold = data.threshold;
+  let streak = data.streak;
+  let timer = null;
+  let plotLayout = null;
+
+  function nice(name) { return name.replaceAll("_", " "); }
+  function current() { return data.scenarios[scenarioIndex]; }
+  function percent(value) { return (value * 100).toFixed(1) + "%"; }
+  function alertFlags(events) {
+    let count = 0;
+    return events.map(event => {
+      count = event.risk >= threshold ? count + 1 : 0;
+      return count >= streak;
+    });
+  }
+  function stop() {
+    if (timer !== null) clearInterval(timer);
+    timer = null;
+    $("play").textContent = "▶ Play";
+  }
+  function svgElement(name, attributes, parent) {
+    const element = document.createElementNS(svgNS, name);
+    for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+    parent.appendChild(element);
+    return element;
+  }
+
+  function drawPlot(scenario, flags) {
+    const svg = $("risk-plot");
+    const width = Math.max(320, Math.round(svg.clientWidth || 700));
+    const height = 266;
+    const left = 44, right = width - 15, top = 13, bottom = 215;
+    const count = scenario.events.length;
+    const x = i => left + (right - left) * i / Math.max(1, count - 1);
+    const y = risk => bottom - (bottom - top) * risk;
+    plotLayout = { left, right, count, width };
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("aria-label", `${scenario.id}: risk across ${count} events, with alert threshold ${percent(threshold)}`);
+    svg.replaceChildren();
+
+    if (scenario.attack_start !== null) {
+      const attackX = x(scenario.attack_start);
+      svgElement("rect", { x: attackX, y: top, width: Math.max(0, right - attackX),
+        height: bottom - top, fill: "var(--attack-soft)" }, svg);
+    }
+    for (const value of [0, .5, 1]) {
+      const yy = y(value);
+      svgElement("line", { x1: left, x2: right, y1: yy, y2: yy,
+        stroke: "var(--line)", "stroke-width": 1 }, svg);
+      const label = svgElement("text", { x: 2, y: yy + 4,
+        fill: "var(--muted)", "font-size": 11 }, svg);
+      label.textContent = `${Math.round(value * 100)}%`;
+    }
+    const thresholdY = y(threshold);
+    svgElement("line", { x1: left, x2: right, y1: thresholdY, y2: thresholdY,
+      stroke: "var(--threshold)", "stroke-width": 2, "stroke-dasharray": "6 5" }, svg);
+    const points = scenario.events.map((event, i) => `${x(i)},${y(event.risk)}`).join(" ");
+    svgElement("polygon", { points: `${left},${bottom} ${points} ${right},${bottom}`,
+      fill: "var(--risk-soft)" }, svg);
+    svgElement("polyline", { points, fill: "none", stroke: "var(--risk)",
+      "stroke-width": 3, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    if (scenario.attack_start !== null) {
+      const attackX = x(scenario.attack_start);
+      svgElement("line", { x1: attackX, x2: attackX, y1: top, y2: bottom,
+        stroke: "var(--attack)", "stroke-width": 1.5, "stroke-dasharray": "3 4" }, svg);
+      if (attackX > left + 65 && attackX < right - 65) {
+        const label = svgElement("text", { x: attackX + 5, y: top + 12,
+          fill: "var(--attack)", "font-size": 11 }, svg);
+        label.textContent = `${phaseLabel} begins`;
+      }
+    }
+    flags.forEach((flag, i) => {
+      if (flag && (i === 0 || !flags[i - 1])) {
+        svgElement("rect", { x: x(i) - 5, y: y(scenario.events[i].risk) - 5,
+          width: 10, height: 10,
+          transform: `rotate(45 ${x(i)} ${y(scenario.events[i].risk)})`,
+          fill: "var(--bg)", stroke: "var(--alert)", "stroke-width": 2 }, svg);
+      }
+    });
+    svgElement("line", { x1: x(step), x2: x(step), y1: top, y2: bottom,
+      stroke: "var(--text)", "stroke-width": 1, "stroke-opacity": .45 }, svg);
+    svgElement("circle", { cx: x(step), cy: y(scenario.events[step].risk), r: 6,
+      fill: "var(--risk)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    const first = svgElement("text", { x: left, y: height - 10,
+      fill: "var(--muted)", "font-size": 11, "text-anchor": "start" }, svg);
+    first.textContent = "event 1";
+    const last = svgElement("text", { x: right, y: height - 10,
+      fill: "var(--muted)", "font-size": 11, "text-anchor": "end" }, svg);
+    last.textContent = `event ${count}`;
+  }
+
+  function drawStates(posterior) {
+    const list = $("stage-bars");
+    list.replaceChildren();
+    data.states.forEach((name, i) => {
+      const row = document.createElement("div");
+      row.className = "stage-row";
+      const label = document.createElement("span");
+      label.textContent = stateNames[name] || nice(name);
+      const track = document.createElement("div");
+      track.className = "bar-track";
+      const fill = document.createElement("div");
+      fill.className = "bar-fill";
+      fill.style.width = percent(posterior[i]);
+      track.appendChild(fill);
+      const value = document.createElement("strong");
+      value.textContent = `${Math.round(posterior[i] * 100)}%`;
+      row.append(label, track, value);
+      list.appendChild(row);
+    });
+  }
+
+  function drawStream(scenario, flags) {
+    const stream = $("event-stream");
+    stream.replaceChildren();
+    scenario.events.forEach((event, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "event-chip";
+      if (scenario.attack_start !== null && i >= scenario.attack_start) button.classList.add("attack-phase");
+      if (flags[i] && (i === 0 || !flags[i - 1])) button.classList.add("alert-phase");
+      if (i === step) button.classList.add("selected");
+      button.setAttribute("aria-label", `Event ${i + 1}: ${nice(event.kind)}, risk ${percent(event.risk)}${flags[i] ? ", alert" : ""}`);
+      const number = document.createElement("small");
+      number.textContent = `#${i + 1}`;
+      button.append(number, document.createTextNode(nice(event.kind)));
+      button.addEventListener("click", () => { stop(); step = i; render(); });
+      stream.appendChild(button);
+    });
+  }
+
+  function summary(scenario, flags) {
+    const firstAlert = flags.findIndex(Boolean);
+    const start = scenario.attack_start;
+    if (scenario.label === "unlabeled") {
+      return firstAlert < 0 ? "Imported session · no model alert under this rule; ground truth is unknown."
+        : `Imported session · first model alert at event ${firstAlert + 1}; ground truth is unknown.`;
+    }
+    if (start === null) {
+      return firstAlert < 0 ? "Benign session · no alert under this policy."
+        : `Benign session · first alert at event ${firstAlert + 1} (a false positive).`;
+    }
+    if (firstAlert < 0) return `Simulated ${phaseLabel} begins at event ${start + 1} · no alert under this policy.`;
+    if (firstAlert < start) return `Simulated ${phaseLabel} begins at event ${start + 1} · alert at event ${firstAlert + 1}, before the ${phaseLabel} starts.`;
+    return `Simulated ${phaseLabel} begins at event ${start + 1} · first alert at event ${firstAlert + 1} (${firstAlert - start} events later).`;
+  }
+
+  function render() {
+    const scenario = current();
+    step = Math.max(0, Math.min(step, scenario.events.length - 1));
+    const event = scenario.events[step];
+    const flags = alertFlags(scenario.events);
+    $("threshold").value = threshold;
+    $("threshold-value").textContent = percent(threshold);
+    $("streak").value = String(streak);
+    $("step").max = String(scenario.events.length - 1);
+    $("step").value = String(step);
+    $("step-value").textContent = `${step + 1} / ${scenario.events.length}`;
+    $("step-label").textContent = `${scenario.id} · ${scenario.label || (scenario.attack_start === null ? "benign" : phaseLabel)} session · event ${step + 1}`;
+    $("event-name").textContent = nice(event.kind);
+    $("event-note").textContent = notes[event.kind] || eventFallback;
+    $("risk-value").textContent = percent(event.risk);
+    const alert = $("alert-status");
+    alert.textContent = flags[step] ? "ALERT" : "No alert";
+    alert.className = flags[step] ? "is-alert" : "is-safe";
+    $("session-summary").textContent = summary(scenario, flags);
+    drawPlot(scenario, flags);
+    drawStates(event.posterior);
+    drawStream(scenario, flags);
+  }
+
+  const sessionSelect = $("session-select");
+  data.scenarios.forEach((scenario, i) => {
+    const option = document.createElement("option");
+    option.value = String(i);
+    option.textContent = `${scenario.id} · ${scenario.label || (scenario.attack_start === null ? "benign" : phaseLabel)}`;
+    sessionSelect.appendChild(option);
+  });
+  sessionSelect.value = String(scenarioIndex);
+  sessionSelect.addEventListener("change", () => {
+    stop(); scenarioIndex = Number(sessionSelect.value); step = 0; render();
+  });
+  $("threshold").addEventListener("input", event => {
+    threshold = Number(event.target.value); render();
+  });
+  $("streak").addEventListener("change", event => {
+    streak = Number(event.target.value); render();
+  });
+  $("step").addEventListener("input", event => {
+    stop(); step = Number(event.target.value); render();
+  });
+  $("play").addEventListener("click", () => {
+    if (timer !== null) { stop(); return; }
+    if (step >= current().events.length - 1) step = 0;
+    $("play").textContent = "Ⅱ Pause";
+    render();
+    timer = setInterval(() => {
+      if (step >= current().events.length - 1) { stop(); return; }
+      step += 1;
+      render();
+    }, 700);
+  });
+  $("risk-plot").addEventListener("click", event => {
+    if (!plotLayout) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const px = (event.clientX - box.left) * plotLayout.width / box.width;
+    const fraction = (px - plotLayout.left) / (plotLayout.right - plotLayout.left);
+    stop();
+    step = Math.max(0, Math.min(plotLayout.count - 1, Math.round(fraction * (plotLayout.count - 1))));
+    render();
+  });
+  new ResizeObserver(() => drawPlot(current(), alertFlags(current().events))).observe($("risk-plot"));
+  render();
+})();
+
+  </script>
+</body>
+</html>

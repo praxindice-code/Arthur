@@ -1,0 +1,257 @@
+{
+  "seed": 42,
+  "training_sessions": 160,
+  "holdout_sessions": 100,
+  "trials_per_search": 16,
+  "methods": {
+    "bayes": {
+      "policy": {
+        "threshold": 0.5,
+        "streak": 2
+      },
+      "training": {
+        "precision": 0.9545454545454546,
+        "recall": 0.7875,
+        "f1": 0.8630136986301369,
+        "benign_false_alert_rate": 0.025,
+        "mean_detection_delay": 0.4898052294927295,
+        "objective": 0.809033175680864,
+        "true_positives": 63,
+        "false_positives": 3,
+        "false_negatives": 17
+      },
+      "holdout": {
+        "precision": 0.9333333333333333,
+        "recall": 0.84,
+        "f1": 0.8842105263157894,
+        "benign_false_alert_rate": 0.06,
+        "mean_detection_delay": 0.48353169053169054,
+        "objective": 0.8238573572626204,
+        "true_positives": 42,
+        "false_positives": 3,
+        "false_negatives": 8
+      },
+      "search_history": [
+        {
+          "threshold": 0.25,
+          "streak": 3,
+          "training_objective": 0.7912763000888001
+        },
+        {
+          "threshold": 0.45,
+          "streak": 4,
+          "training_objective": 0.7473847809479653
+        },
+        {
+          "threshold": 0.8,
+          "streak": 3,
+          "training_objective": 0.7567781942322384
+        },
+        {
+          "threshold": 0.85,
+          "streak": 4,
+          "training_objective": 0.6825757900852378
+        },
+        {
+          "threshold": 0.5,
+          "streak": 2,
+          "training_objective": 0.809033175680864
+        },
+        {
+          "threshold": 0.85,
+          "streak": 1,
+          "training_objective": 0.8010046411921412
+        },
+        {
+          "threshold": 0.25,
+          "streak": 1,
+          "training_objective": 0.6989355054667556
+        },
+        {
+          "threshold": 0.95,
+          "streak": 2,
+          "training_objective": 0.7566765528180969
+        },
+        {
+          "threshold": 0.6,
+          "streak": 1,
+          "training_objective": 0.7608472063829745
+        },
+        {
+          "threshold": 0.5,
+          "streak": 3,
+          "training_objective": 0.7729552942624751
+        },
+        {
+          "threshold": 0.7,
+          "streak": 2,
+          "training_objective": 0.8032084836622689
+        },
+        {
+          "threshold": 0.25,
+          "streak": 4,
+          "training_objective": 0.7867140567765567
+        },
+        {
+          "threshold": 0.25,
+          "streak": 2,
+          "training_objective": 0.7770850367679356
+        },
+        {
+          "threshold": 0.95,
+          "streak": 1,
+          "training_objective": 0.8084292611938888
+        },
+        {
+          "threshold": 0.95,
+          "streak": 3,
+          "training_objective": 0.7027345851508542
+        },
+        {
+          "threshold": 0.65,
+          "streak": 4,
+          "training_objective": 0.7252898713128976
+        }
+      ]
+    },
+    "random": {
+      "policy": {
+        "threshold": 0.85,
+        "streak": 1
+      },
+      "training": {
+        "precision": 0.9402985074626866,
+        "recall": 0.7875,
+        "f1": 0.8571428571428571,
+        "benign_false_alert_rate": 0.0375,
+        "mean_detection_delay": 0.4863821595071595,
+        "objective": 0.8010046411921412,
+        "true_positives": 63,
+        "false_positives": 4,
+        "false_negatives": 17
+      },
+      "holdout": {
+        "precision": 0.9565217391304348,
+        "recall": 0.88,
+        "f1": 0.9166666666666666,
+        "benign_false_alert_rate": 0.04,
+        "mean_detection_delay": 0.48484731934731934,
+        "objective": 0.8601819347319347,
+        "true_positives": 44,
+        "false_positives": 2,
+        "false_negatives": 6
+      },
+      "search_history": [
+        {
+          "threshold": 0.25,
+          "streak": 3,
+          "training_objective": 0.7912763000888001
+        },
+        {
+          "threshold": 0.45,
+          "streak": 4,
+          "training_objective": 0.7473847809479653
+        },
+        {
+          "threshold": 0.8,
+          "streak": 3,
+          "training_objective": 0.7567781942322384
+        },
+        {
+          "threshold": 0.85,
+          "streak": 4,
+          "training_objective": 0.6825757900852378
+        },
+        {
+          "threshold": 0.35,
+          "streak": 3,
+          "training_objective": 0.7991584983147483
+        },
+        {
+          "threshold": 0.65,
+          "streak": 1,
+          "training_objective": 0.7878248043453836
+        },
+        {
+          "threshold": 0.55,
+          "streak": 3,
+          "training_objective": 0.7721279445288753
+        },
+        {
+          "threshold": 0.85,
+          "streak": 1,
+          "training_objective": 0.8010046411921412
+        },
+        {
+          "threshold": 0.9,
+          "streak": 1,
+          "training_objective": 0.7982225858432754
+        },
+        {
+          "threshold": 0.95,
+          "streak": 4,
+          "training_objective": 0.6470220057720057
+        },
+        {
+          "threshold": 0.3,
+          "streak": 4,
+          "training_objective": 0.7761312680375181
+        },
+        {
+          "threshold": 0.65,
+          "streak": 4,
+          "training_objective": 0.7252898713128976
+        },
+        {
+          "threshold": 0.8,
+          "streak": 2,
+          "training_objective": 0.8002848274573627
+        },
+        {
+          "threshold": 0.7,
+          "streak": 3,
+          "training_objective": 0.7687777294398247
+        },
+        {
+          "threshold": 0.85,
+          "streak": 2,
+          "training_objective": 0.7980575535575535
+        },
+        {
+          "threshold": 0.25,
+          "streak": 2,
+          "training_objective": 0.7770850367679356
+        }
+      ]
+    },
+    "fixed": {
+      "policy": {
+        "threshold": 0.7,
+        "streak": 2
+      },
+      "training": {
+        "precision": 0.9838709677419355,
+        "recall": 0.7625,
+        "f1": 0.8591549295774648,
+        "benign_false_alert_rate": 0.0125,
+        "mean_detection_delay": 0.5344644591519592,
+        "objective": 0.8032084836622689,
+        "true_positives": 61,
+        "false_positives": 1,
+        "false_negatives": 19
+      },
+      "holdout": {
+        "precision": 0.9512195121951219,
+        "recall": 0.78,
+        "f1": 0.8571428571428571,
+        "benign_false_alert_rate": 0.04,
+        "mean_detection_delay": 0.5654936729936729,
+        "objective": 0.7925934898434898,
+        "true_positives": 39,
+        "false_positives": 2,
+        "false_negatives": 11
+      },
+      "search_history": []
+    }
+  }
+}

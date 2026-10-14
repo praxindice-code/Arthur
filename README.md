@@ -44,3 +44,17 @@ The output path must not already exist. The model score is not a calibrated prob
 The collector omits names, Roblox UserIds, chat, remote arguments, and exact position paths from its rows. It caps output at 2,000 windows per server and is **not** a durable telemetry pipeline for a populated live game. Roblox client-owned physics can affect observed movement; a high speed alone is not proof of cheating.
 
 Next engineering step: add a bounded, server-timestamped movement timeline with gap censoring, then validate it in Studio before connecting it to the CTBN. Live ingestion, retention/deletion, reviewer tooling, and measured false-positive rates remain unbuilt.
+
+## Full project history
+
+The `research/` directory preserves the earlier, separate prototype: its Python HMM and Bayesian-optimization experiments, Rust and Zig source, synthetic fixtures, standalone HTML viewers, Roblox test-range scripts, and editable `.rbxlx` places. The `arthur/` package above remains the current pilot's source of truth; `research/pilot/` is a historical copy, not another deployment target.
+
+After cloning on another PC, run the current pilot tests from the repository root, then the archived tests from `research/`:
+
+```powershell
+python -m unittest discover -s tests -q
+cd research
+python -m unittest discover -s tests -q
+```
+
+See [research/BUILD.md](research/BUILD.md) to rebuild the optional native tools. Generated executables, Rust build output, local toolchains, and temporary files are deliberately not committed. The checked-in HTML viewers and Roblox place files can be opened without building those tools.

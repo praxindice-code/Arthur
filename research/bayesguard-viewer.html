@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArthurAI · Attack sequence explorer</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --surface: #171717;
+  --surface-2: #252525;
+  --text: #f5f5f5;
+  --muted: #b5b5b5;
+  --line: #484848;
+  --risk: #f5f5f5;
+  --risk-soft: rgba(245, 245, 245, .12);
+  --threshold: #a0a0a0;
+  --attack: #c8c8c8;
+  --attack-soft: rgba(200, 200, 200, .09);
+  --alert: #ffffff;
+  --alert-soft: rgba(255, 255, 255, .13);
+  --safe: #b8b8b8;
+  --shadow: 0 8px 30px rgba(0, 0, 0, .22);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.48 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, select, input { font: inherit; }
+button, select { color: var(--text); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--risk); outline-offset: 3px; }
+.app { max-width: 1120px; margin: 0 auto; padding: 30px 28px 36px; }
+.masthead { margin-bottom: 24px; }
+.brand { display: flex; gap: 6px; align-items: center; color: var(--risk); font-weight: 700; letter-spacing: .02em; }
+.brand-mark { font-size: 23px; line-height: 1; }
+.brand-suffix { color: var(--muted); font-weight: 400; }
+h1 { font-size: clamp(25px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.12; margin: 12px 0 8px; }
+.masthead p { margin: 0; max-width: 730px; color: var(--muted); }
+h2 { font-size: 17px; letter-spacing: -.01em; margin: 0; }
+.controls { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 1.2fr) minmax(145px, .8fr) auto; gap: 14px; align-items: end; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 15px; box-shadow: var(--shadow); }
+.field { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.field output { color: var(--text); font-variant-numeric: tabular-nums; }
+select { height: 41px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); padding: 0 10px; min-width: 0; }
+input[type=range] { width: 100%; height: 40px; margin: 0; accent-color: var(--risk); }
+.play-button { height: 41px; border: 0; border-radius: 8px; background: var(--risk); color: var(--bg); font-weight: 700; padding: 0 18px; min-width: 92px; }
+.play-button:hover { filter: brightness(1.09); }
+.readout { display: flex; justify-content: space-between; gap: 18px; align-items: center; padding: 23px 0 20px; border-bottom: 1px solid var(--line); }
+.eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .09em; font-size: 11px; font-weight: 700; }
+.readout h2 { font-size: clamp(23px, 2.4vw, 30px); letter-spacing: -.025em; margin: 2px 0; }
+.readout-note { color: var(--muted); font-size: 13px; }
+.readout-values { display: flex; gap: 26px; flex-shrink: 0; }
+.readout-values > div { display: flex; flex-direction: column; min-width: 84px; }
+.metric-label { color: var(--muted); font-size: 12px; }
+.readout-values strong { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.is-alert { color: var(--alert); }
+.is-safe { color: var(--safe); }
+.plot-section { padding: 20px 0 16px; border-bottom: 1px solid var(--line); }
+.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.legend { display: flex; gap: 17px; color: var(--muted); font-size: 12px; }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; background: currentColor; }
+.legend-risk { color: var(--risk); }
+.legend-threshold { color: var(--threshold); }
+.legend-alert { color: var(--alert); }
+.legend-alert::before { height: 9px !important; width: 9px !important; background: var(--bg) !important; border: 2px solid currentColor; border-radius: 1px !important; transform: rotate(45deg); }
+#risk-plot { display: block; width: 100%; height: 266px; margin: 14px 0 0; overflow: visible; touch-action: manipulation; }
+.step-control { display: flex; gap: 15px; align-items: center; }
+.step-control label { white-space: nowrap; font-size: 13px; font-weight: 600; }
+.step-control output { font-variant-numeric: tabular-nums; }
+.step-control input { flex: 1; }
+.plot-caption { color: var(--muted); font-size: 12px; margin: 0; }
+.lower { display: grid; grid-template-columns: minmax(250px, .85fr) minmax(0, 1.35fr); gap: 30px; padding: 24px 0; }
+.stage-bars { display: grid; gap: 12px; margin-top: 18px; }
+.stage-row { display: grid; grid-template-columns: 98px minmax(0, 1fr) 42px; gap: 10px; align-items: center; font-size: 13px; }
+.stage-row strong { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.bar-track { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.bar-fill { height: 100%; background: var(--risk); border-radius: inherit; transition: width .15s ease; }
+.stage-row:first-child .bar-fill { background: var(--safe); }
+.stream-hint { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+.event-stream { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+.event-chip { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); padding: 5px 8px; font-size: 12px; line-height: 1.25; min-height: 38px; text-align: left; }
+.event-chip small { display: block; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.event-chip.attack-phase { background: var(--attack-soft); }
+.event-chip.alert-phase { border: 2px solid var(--alert); font-weight: 700; }
+.event-chip.selected { outline: 2px solid var(--risk); outline-offset: 1px; }
+.event-chip:hover { background: var(--surface-2); }
+footer { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 12px; }
+@media (max-width: 800px) {
+  .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .play-button { width: 100%; }
+  .lower { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .app { padding: 20px 16px; }
+  .controls { grid-template-columns: 1fr; }
+  .readout { align-items: flex-start; flex-direction: column; }
+  .readout-values { width: 100%; justify-content: space-between; }
+  .stage-row { grid-template-columns: 88px minmax(0,1fr) 42px; }
+}
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span> ArthurAI <span class="brand-suffix">/ explorer</span></div>
+      <h1>Watch an audit session turn suspicious</h1>
+      <p>Each event changes the model’s estimate of attack activity. Step through a simulated session and adjust when an alert fires.</p>
+    </header>
+
+    <section class="controls" aria-label="Explorer controls">
+      <label class="field scenario-field">Session
+        <select id="session-select"></select>
+      </label>
+      <label class="field threshold-field">Alert threshold <output id="threshold-value" for="threshold"></output>
+        <input id="threshold" type="range" min="0.25" max="0.95" step="0.05">
+      </label>
+      <label class="field streak-field">Consecutive events
+        <select id="streak">
+          <option value="1">1 event</option>
+          <option value="2">2 events</option>
+          <option value="3">3 events</option>
+          <option value="4">4 events</option>
+        </select>
+      </label>
+      <button id="play" type="button" class="play-button">▶ Play</button>
+    </section>
+
+    <section class="readout" aria-live="polite" aria-label="Current event">
+      <div class="readout-main">
+        <div class="eyebrow" id="step-label"></div>
+        <h2 id="event-name"></h2>
+        <div class="readout-note" id="event-note"></div>
+      </div>
+      <div class="readout-values">
+        <div><span class="metric-label">Attack risk</span><strong id="risk-value"></strong></div>
+        <div><span class="metric-label">Policy</span><strong id="alert-status"></strong></div>
+      </div>
+    </section>
+
+    <section class="plot-section" aria-labelledby="plot-title">
+      <div class="section-heading">
+        <h2 id="plot-title">Risk through the session</h2>
+        <div class="legend"><span class="legend-risk">Risk</span><span class="legend-threshold">Threshold</span><span class="legend-alert">Alert</span></div>
+      </div>
+      <svg id="risk-plot" role="img" aria-label="Risk by event"></svg>
+      <div class="step-control">
+        <label for="step">Event <output id="step-value" for="step"></output></label>
+        <input id="step" type="range" min="0" value="0">
+      </div>
+      <p class="plot-caption" id="session-summary"></p>
+    </section>
+
+    <section class="lower" aria-label="Event detail">
+      <div class="stage-section">
+        <h2>Model’s current state estimate</h2>
+        <div id="stage-bars" class="stage-bars"></div>
+      </div>
+      <div class="stream-section">
+        <h2>Event stream <span class="stream-hint">Select an event to inspect it</span></h2>
+        <div id="event-stream" class="event-stream"></div>
+      </div>
+    </section>
+
+    <footer>Offline demonstration using simulated cloud events and hand-set model probabilities. This view does not represent a production detection system.</footer>
+  </main>
+  <script id="bg-data" type="application/json">{"seed":7,"threshold":0.5,"streak":2,"states":["normal","recon","credential","privilege","exfil"],"scenarios":[{"id":"s0000","attack_start":null,"events":[{"kind":"login_fail","risk":0.06635071,"posterior":[0.93364929,0.06635071,0.0,0.0,0.0]},{"kind":"list_objects","risk":0.03722792,"posterior":[0.96277208,0.03647665,0.00075127,0.0,0.0]},{"kind":"login_ok","risk":0.00871195,"posterior":[0.99128805,0.00813123,0.00057377,6.95e-06,0.0]},{"kind":"logout","risk":0.00192114,"posterior":[0.99807886,0.0017936,0.00012114,6.34e-06,6e-08]},{"kind":"login_ok","risk":0.00310418,"posterior":[0.99689582,0.00306774,3.492e-05,1.48e-06,3e-08]},{"kind":"read_object","risk":0.00189695,"posterior":[0.99810305,0.00188192,1.435e-05,5.9e-07,9e-08]},{"kind":"list_users","risk":0.20051626,"posterior":[0.79948374,0.20003214,0.00048182,2.24e-06,6e-08]},{"kind":"login_ok","risk":0.03917925,"posterior":[0.96082075,0.03596677,0.00320724,5.23e-06,1e-08]},{"kind":"login_ok","risk":0.00890842,"posterior":[0.99109158,0.00808878,0.00078958,3.005e-05,2e-08]},{"kind":"list_objects","risk":0.01178118,"posterior":[0.98821882,0.01161269,0.00014599,2.195e-05,5.6e-07]},{"kind":"login_ok","risk":0.0046471,"posterior":[0.9953529,0.00447316,0.00017114,2.69e-06,1e-07]},{"kind":"list_objects","risk":0.01015901,"posterior":[0.98984099,0.01009327,6.15e-05,4.17e-06,7e-08]},{"kind":"logout","risk":0.00202689,"posterior":[0.99797311,0.00191864,0.00010729,9.2e-07,4e-08]},{"kind":"login_ok","risk":0.00312178,"posterior":[0.99687822,0.00308539,3.537e-05,1.02e-06,0.0]},{"kind":"login_ok","risk":0.0032959,"posterior":[0.9967041,0.00325066,4.486e-05,3.8e-07,0.0]},{"kind":"read_object","risk":0.00191315,"posterior":[0.99808685,0.00189708,1.543e-05,6.2e-07,2e-08]},{"kind":"login_fail","risk":0.07630844,"posterior":[0.92369156,0.07195135,0.00435334,3.7e-06,5e-08]},{"kind":"read_object","risk":0.00847548,"posterior":[0.99152452,0.00795078,0.0004637,6.076e-05,2.4e-07]},{"kind":"list_objects","risk":0.01168761,"posterior":[0.98831239,0.01154587,0.0001212,1.939e-05,1.16e-06]},{"kind":"assume_role","risk":0.03504285,"posterior":[0.96495715,0.02336534,0.01099453,0.00067847,4.51e-06]},{"kind":"login_ok","risk":0.00778132,"posterior":[0.99221868,0.00631484,0.00131917,0.00014453,2.78e-06]}]},{"id":"s0001","attack_start":10,"events":[{"kind":"list_objects","risk":0.00823799,"posterior":[0.99176201,0.00823799,0.0,0.0,0.0]},{"kind":"read_object","risk":0.00234654,"posterior":[0.99765346,0.00231052,3.602e-05,0.0,0.0]},{"kind":"read_object","risk":0.00183096,"posterior":[0.99816904,0.00181942,1.107e-05,4.7e-07,0.0]},{"kind":"read_object","risk":0.00178722,"posterior":[0.99821278,0.00177878,8.23e-06,1.9e-07,3e-08]},{"kind":"read_object","risk":0.00178353,"posterior":[0.99821647,0.00177542,7.97e-06,1.2e-07,2e-08]},{"kind":"login_ok","risk":0.0030889,"posterior":[0.9969111,0.00306412,2.47e-05,8e-08,0.0]},{"kind":"read_object","risk":0.00189594,"posterior":[0.99810406,0.00188156,1.404e-05,3.3e-07,0.0]},{"kind":"login_ok","risk":0.00310608,"posterior":[0.99689392,0.00307926,2.667e-05,1.5e-07,0.0]},{"kind":"login_ok","risk":0.00329396,"posterior":[0.99670604,0.00324971,4.4e-05,2.5e-07,0.0]},{"kind":"read_object","risk":0.00191301,"posterior":[0.99808699,0.001897,1.54e-05,6e-07,1e-08]},{"kind":"list_users","risk":0.20063279,"posterior":[0.79936721,0.20014329,0.0004871,2.38e-06,3e-08]},{"kind":"list_objects","risk":0.10158783,"posterior":[0.89841217,0.0991199,0.00245572,1.216e-05,5e-08]},{"kind":"list_users","risk":0.60413603,"posterior":[0.39586397,0.58872982,0.01523787,0.00016807,2.8e-07]},{"kind":"list_users","risk":0.93834142,"posterior":[0.06165858,0.91043239,0.02757937,0.00032851,1.14e-06]},{"kind":"read_secret","risk":0.90817728,"posterior":[0.09182272,0.49596122,0.37371873,0.03835188,0.00014546]},{"kind":"login_fail","risk":0.98108194,"posterior":[0.01891806,0.20640747,0.76021178,0.01416756,0.00029512]},{"kind":"login_fail","risk":0.99376243,"posterior":[0.00623757,0.06940904,0.91120374,0.01306343,8.622e-05]},{"kind":"login_fail","risk":0.99587109,"posterior":[0.00412891,0.03137771,0.95075791,0.01367223,6.324e-05]},{"kind":"assume_role","risk":0.99347118,"posterior":[0.00652882,0.00836223,0.65488083,0.32997753,0.00025058]},{"kind":"read_secret","risk":0.99507487,"posterior":[0.00492513,0.00513928,0.27707331,0.68671637,0.02614591]}]},{"id":"s0002","attack_start":null,"events":[{"kind":"logout","risk":0.00126743,"posterior":[0.99873257,0.00126743,0.0,0.0,0.0]},{"kind":"read_object","risk":0.00173875,"posterior":[0.99826125,0.00173324,5.51e-06,0.0,0.0]},{"kind":"list_objects","risk":0.00897386,"posterior":[0.99102614,0.00895429,1.945e-05,1.2e-07,0.0]},{"kind":"read_secret","risk":0.03434407,"posterior":[0.96565593,0.02855309,0.00574281,4.808e-05,1e-07]},{"kind":"login_ok","risk":0.00798585,"posterior":[0.99201415,0.00701675,0.00091285,5.607e-05,1.9e-07]},{"kind":"list_objects","risk":0.011343,"posterior":[0.988657,0.01117028,0.00014307,2.858e-05,1.06e-06]},{"kind":"read_object","risk":0.00261584,"posterior":[0.99738416,0.00255618,5.309e-05,4.45e-06,2.12e-06]},{"kind":"login_ok","risk":0.00321564,"posterior":[0.99678436,0.00317553,3.926e-05,7.6e-07,9e-08]},{"kind":"list_objects","risk":0.00959075,"posterior":[0.99040925,0.009552,3.774e-05,9.8e-07,3e-08]},{"kind":"login_ok","risk":0.00430906,"posterior":[0.99569094,0.00417548,0.00013318,4e-07,0.0]},{"kind":"read_object","risk":0.00199782,"posterior":[0.99800218,0.00197404,2.197e-05,1.78e-06,2e-08]},{"kind":"read_object","risk":0.00180136,"posterior":[0.99819864,0.00179159,9.21e-06,4.5e-07,1.1e-07]},{"kind":"read_object","risk":0.00178477,"posterior":[0.99821523,0.00177648,8.05e-06,1.6e-07,8e-08]},{"kind":"list_objects","risk":0.00899256,"posterior":[0.99100744,0.00897224,2.01e-05,2e-07,2e-08]},{"kind":"read_object","risk":0.00241195,"posterior":[0.99758805,0.00237182,3.983e-05,2.8e-07,2e-08]},{"kind":"read_object","risk":0.00183651,"posterior":[0.99816349,0.00182449,1.145e-05,5.5e-07,3e-08]},{"kind":"read_object","risk":0.0017877,"posterior":[0.9982123,0.0017792,8.26e-06,2e-07,4e-08]},{"kind":"list_objects","risk":0.00899374,"posterior":[0.99100626,0.00897337,2.015e-05,2.1e-07,1e-08]},{"kind":"logout","risk":0.00193891,"posterior":[0.99806109,0.0018457,9.299e-05,2.2e-07,0.0]},{"kind":"login_fail","risk":0.07708977,"posterior":[0.92291023,0.07173675,0.00533526,1.774e-05,2e-08]},{"kind":"list_objects","risk":0.04046913,"posterior":[0.95953087,0.03913077,0.00121358,0.00012444,3.4e-07]},{"kind":"read_object","risk":0.00520499,"posterior":[0.99479501,0.00495877,0.00021127,2.779e-05,7.16e-06]},{"kind":"login_ok","risk":0.00360932,"posterior":[0.99639068,0.00351938,8.595e-05,3.63e-06,3.6e-07]},{"kind":"read_object","risk":0.00193912,"posterior":[0.99806088,0.00191952,1.777e-05,1.45e-06,3.8e-07]},{"kind":"read_object","risk":0.00179656,"posterior":[0.99820344,0.00178707,8.86e-06,3.6e-07,2.8e-07]}]},{"id":"s0003","attack_start":13,"events":[{"kind":"list_objects","risk":0.00823799,"posterior":[0.99176201,0.00823799,0.0,0.0,0.0]},{"kind":"list_objects","risk":0.01174268,"posterior":[0.98825732,0.01165186,9.082e-05,0.0,0.0]},{"kind":"read_object","risk":0.00265103,"posterior":[0.99734897,0.00259615,5.368e-05,1.19e-06,0.0]},{"kind":"login_ok","risk":0.00322162,"posterior":[0.99677838,0.00318122,3.984e-05,5.6e-07,0.0]},{"kind":"list_objects","risk":0.00959319,"posterior":[0.99040681,0.00955437,3.784e-05,9.6e-07,1e-08]},{"kind":"login_ok","risk":0.00430944,"posterior":[0.99569056,0.00417582,0.00013322,4e-07,0.0]},{"kind":"login_ok","risk":0.00347642,"posterior":[0.99652358,0.00340692,6.827e-05,1.23e-06,0.0]},{"kind":"login_ok","risk":0.00334956,"posterior":[0.99665044,0.00329675,5.212e-05,6.9e-07,0.0]},{"kind":"read_object","risk":0.00191755,"posterior":[0.99808245,0.00190093,1.584e-05,7.4e-07,4e-08]},{"kind":"login_ok","risk":0.00310931,"posterior":[0.99689069,0.00308203,2.709e-05,1.9e-07,0.0]},{"kind":"login_ok","risk":0.00329444,"posterior":[0.99670556,0.00325011,4.408e-05,2.6e-07,0.0]},{"kind":"list_objects","risk":0.00962293,"posterior":[0.99037707,0.00958302,3.891e-05,1.01e-06,0.0]},{"kind":"logout","risk":0.00198636,"posterior":[0.99801364,0.00188537,0.00010051,4.7e-07,1e-08]},{"kind":"read_object","risk":0.00179713,"posterior":[0.99820287,0.0017847,1.105e-05,1.35e-06,3e-08]},{"kind":"read_object","risk":0.00178435,"posterior":[0.99821565,0.00177592,8.08e-06,2.6e-07,9e-08]},{"kind":"list_objects","risk":0.00899235,"posterior":[0.99100765,0.00897201,2.01e-05,2.2e-07,2e-08]},{"kind":"read_object","risk":0.00241193,"posterior":[0.99758807,0.0023718,3.982e-05,2.8e-07,2e-08]},{"kind":"list_users","risk":0.20427031,"posterior":[0.79572969,0.20362628,0.00063894,5.07e-06,2e-08]},{"kind":"login_fail","risk":0.60925143,"posterior":[0.39074857,0.3761407,0.23304543,6.513e-05,1.7e-07]},{"kind":"bulk_download","risk":0.80256573,"posterior":[0.19743427,0.2712276,0.40573328,0.12524685,0.000358]},{"kind":"login_fail","risk":0.97029123,"posterior":[0.02970877,0.12666188,0.81275732,0.0298572,0.00101483]},{"kind":"read_object","risk":0.38186227,"posterior":[0.61813773,0.10573857,0.16696954,0.09395002,0.01520413]},{"kind":"list_objects","risk":0.12312255,"posterior":[0.87687745,0.07401466,0.01858545,0.02451987,0.00600257]}]},{"id":"s0004","attack_start":null,"events":[{"kind":"login_ok","risk":0.00281215,"posterior":[0.99718785,0.00281215,0.0,0.0,0.0]},{"kind":"login_ok","risk":0.00324948,"posterior":[0.99675052,0.00321145,3.804e-05,0.0,0.0]},{"kind":"login_ok","risk":0.00331577,"posterior":[0.99668423,0.00326863,4.68e-05,3.4e-07,0.0]},{"kind":"list_objects","risk":0.00963115,"posterior":[0.99036885,0.00959076,3.93e-05,1.08e-06,1e-08]},{"kind":"read_object","risk":0.00246731,"posterior":[0.99753269,0.00242353,4.31e-05,6.1e-07,6e-08]},{"kind":"login_ok","risk":0.00319356,"posterior":[0.99680644,0.00315657,3.656e-05,4.3e-07,0.0]},{"kind":"login_ok","risk":0.00330709,"posterior":[0.99669291,0.0032608,4.593e-05,3.6e-07,0.0]},{"kind":"read_object","risk":0.00191408,"posterior":[0.99808592,0.00189793,1.55e-05,6.3e-07,2e-08]},{"kind":"read_object","risk":0.00179428,"posterior":[0.99820572,0.00178528,8.7e-06,2.6e-07,4e-08]},{"kind":"list_objects","risk":0.00899638,"posterior":[0.99100362,0.00897589,2.025e-05,2.3e-07,1e-08]},{"kind":"login_ok","risk":0.0042165,"posterior":[0.9957835,0.00409256,0.00012374,2e-07,0.0]},{"kind":"logout","risk":0.00158171,"posterior":[0.99841829,0.00153062,4.982e-05,1.27e-06,0.0]},{"kind":"login_fail","risk":0.07490536,"posterior":[0.92509464,0.0708468,0.00404747,1.101e-05,8e-08]},{"kind":"read_object","risk":0.0083515,"posterior":[0.9916485,0.00784481,0.00044887,5.714e-05,6.8e-07]},{"kind":"read_object","risk":0.0023421,"posterior":[0.9976579,0.00228045,4.717e-05,1.101e-05,3.48e-06]},{"kind":"list_objects","risk":0.00921374,"posterior":[0.99078626,0.00918173,2.85e-05,2.7e-06,8.1e-07]}]},{"id":"s0005","attack_start":16,"events":[{"kind":"logout","risk":0.00126743,"posterior":[0.99873257,0.00126743,0.0,0.0,0.0]},{"kind":"list_objects","risk":0.00877549,"posterior":[0.99122451,0.00876156,1.393e-05,0.0,0.0]},{"kind":"list_objects","risk":0.01196802,"posterior":[0.98803198,0.0118701,9.762e-05,3.1e-07,0.0]},{"kind":"login_ok","risk":0.00468091,"posterior":[0.99531909,0.00450974,0.00017027,9.1e-07,0.0]},{"kind":"read_object","risk":0.00202877,"posterior":[0.99797123,0.00200192,2.449e-05,2.31e-06,5e-08]},{"kind":"login_ok","risk":0.00312606,"posterior":[0.99687394,0.00309646,2.923e-05,3.6e-07,1e-08]},{"kind":"login_ok","risk":0.00329693,"posterior":[0.99670307,0.00325218,4.446e-05,2.9e-07,0.0]},{"kind":"login_ok","risk":0.00332283,"posterior":[0.99667717,0.00327449,4.792e-05,4.2e-07,0.0]},{"kind":"login_ok","risk":0.00332668,"posterior":[0.99667332,0.0032777,4.852e-05,4.6e-07,0.0]},{"kind":"list_objects","risk":0.00963524,"posterior":[0.99036476,0.00959456,3.953e-05,1.14e-06,1e-08]},{"kind":"login_ok","risk":0.00431596,"posterior":[0.99568404,0.00418161,0.00013392,4.3e-07,0.0]},{"kind":"login_ok","risk":0.0034774,"posterior":[0.9965226,0.00340775,6.841e-05,1.24e-06,0.0]},{"kind":"login_ok","risk":0.0033497,"posterior":[0.9966503,0.00329687,5.214e-05,6.9e-07,0.0]},{"kind":"login_ok","risk":0.00333064,"posterior":[0.99666936,0.00328092,4.92e-05,5.1e-07,0.0]},{"kind":"list_objects","risk":0.0096367,"posterior":[0.9903633,0.00959592,3.961e-05,1.16e-06,1e-08]},{"kind":"login_ok","risk":0.00431618,"posterior":[0.99568382,0.00418181,0.00013394,4.3e-07,0.0]},{"kind":"list_users","risk":0.21786965,"posterior":[0.78213035,0.21664507,0.00120819,1.637e-05,2e-08]},{"kind":"list_objects","risk":0.11027958,"posterior":[0.88972042,0.10751114,0.00273594,3.217e-05,3.4e-07]},{"kind":"login_fail","risk":0.45265066,"posterior":[0.54734934,0.27337812,0.17890729,0.00036381,1.45e-06]},{"kind":"list_objects","risk":0.19678628,"posterior":[0.80321372,0.16963737,0.02166712,0.0054723,9.49e-06]},{"kind":"login_fail","risk":0.63280737,"posterior":[0.36719263,0.29949711,0.32780606,0.00533666,0.00016753]},{"kind":"read_secret","risk":0.86989828,"posterior":[0.13010172,0.10450359,0.48901231,0.27464135,0.00174103]},{"kind":"read_secret","risk":0.97935407,"posterior":[0.02064593,0.01679693,0.25884822,0.67597847,0.02773044]},{"kind":"read_secret","risk":0.99592116,"posterior":[0.00407884,0.00250855,0.09167949,0.84738763,0.05434548]},{"kind":"read_secret","risk":0.99773635,"posterior":[0.00226365,0.00054998,0.03833926,0.89016359,0.06868353]},{"kind":"assume_role","risk":0.99810289,"posterior":[0.00189711,0.00013627,0.03213381,0.95252124,0.01331156]}]},{"id":"s0006","attack_start":null,"events":[{"kind":"read_object","risk":0.00162896,"posterior":[0.99837104,0.00162896,0.0,0.0,0.0]},{"kind":"list_objects","risk":0.00892893,"posterior":[0.99107107,0.00891102,1.791e-05,0.0,0.0]},{"kind":"read_object","risk":0.00240643,"posterior":[0.99759357,0.0023667,3.949e-05,2.4e-07,0.0]},{"kind":"read_object","risk":0.00183604,"posterior":[0.99816396,0.00182407,1.142e-05,5.4e-07,1e-08]},{"kind":"login_ok","risk":0.00309687,"posterior":[0.99690313,0.00307107,2.566e-05,1.4e-07,0.0]},{"kind":"login_fail","risk":0.08238868,"posterior":[0.91761132,0.07536657,0.00701714,4.97e-06,1e-08]},{"kind":"list_objects","risk":0.04237965,"posterior":[0.95762035,0.04083432,0.00138392,0.00016132,1e-07]},{"kind":"read_object","risk":0.00537682,"posterior":[0.99462318,0.00510987,0.00022431,3.353e-05,9.12e-06]},{"kind":"list_users","risk":0.22478427,"posterior":[0.77521573,0.22316413,0.00156142,5.396e-05,4.75e-06]},{"kind":"read_object","risk":0.02522659,"posterior":[0.97477341,0.02395623,0.00123321,3.062e-05,6.55e-06]},{"kind":"list_objects","risk":0.01866914,"posterior":[0.98133086,0.01827979,0.00035553,3.209e-05,1.72e-06]},{"kind":"logout","risk":0.00267449,"posterior":[0.99732551,0.00245606,0.0002121,5.92e-06,4.2e-07]},{"kind":"read_object","risk":0.00185292,"posterior":[0.99814708,0.00183238,1.67e-05,3.3e-06,5.4e-07]},{"kind":"login_ok","risk":0.00309894,"posterior":[0.99690106,0.0030723,2.625e-05,3.5e-07,3e-08]},{"kind":"list_objects","risk":0.00954522,"posterior":[0.99045478,0.00950891,3.567e-05,6.3e-07,1e-08]},{"kind":"login_ok","risk":0.00430203,"posterior":[0.99569797,0.00416926,0.0001324,3.6e-07,0.0]},{"kind":"logout","risk":0.00158815,"posterior":[0.99841185,0.00153559,5.118e-05,1.37e-06,0.0]},{"kind":"read_object","risk":0.0017646,"posterior":[0.9982354,0.00175561,8.13e-06,7.9e-07,8e-08]},{"kind":"logout","risk":0.00139844,"posterior":[0.99860156,0.00137992,1.837e-05,1.4e-07,1e-08]},{"kind":"list_objects","risk":0.00882546,"posterior":[0.99117454,0.00880855,1.648e-05,4.2e-07,0.0]},{"kind":"login_ok","risk":0.0041898,"posterior":[0.9958102,0.0040685,0.00012112,1.8e-07,0.0]},{"kind":"logout","risk":0.0015797,"posterior":[0.9984203,0.00152906,4.94e-05,1.24e-06,0.0]}]},{"id":"s0007","attack_start":9,"events":[{"kind":"logout","risk":0.00126743,"posterior":[0.99873257,0.00126743,0.0,0.0,0.0]},{"kind":"logout","risk":0.00136145,"posterior":[0.99863855,0.00134858,1.286e-05,0.0,0.0]},{"kind":"read_object","risk":0.00174639,"posterior":[0.99825361,0.00173999,6.23e-06,1.7e-07,0.0]},{"kind":"login_ok","risk":0.00308321,"posterior":[0.99691679,0.00305908,2.406e-05,7e-08,0.0]},{"kind":"read_object","risk":0.00189547,"posterior":[0.99810453,0.00188114,1.4e-05,3.2e-07,0.0]},{"kind":"list_objects","risk":0.00903772,"posterior":[0.99096228,0.00901568,2.168e-05,3.6e-07,1e-08]},{"kind":"login_ok","risk":0.00422292,"posterior":[0.99577708,0.00409828,0.00012441,2.2e-07,0.0]},{"kind":"login_ok","risk":0.00346336,"posterior":[0.99653664,0.00339578,6.644e-05,1.14e-06,0.0]},{"kind":"list_objects","risk":0.00968772,"posterior":[0.99031228,0.00964395,4.211e-05,1.63e-06,2e-08]},{"kind":"list_users","risk":0.25585048,"posterior":[0.74414952,0.25357708,0.00226724,6.09e-06,7e-08]},{"kind":"read_object","risk":0.02928741,"posterior":[0.97071259,0.02778725,0.00146196,3.774e-05,4.6e-07]},{"kind":"assume_role","risk":0.07157682,"posterior":[0.92842318,0.03459195,0.03248564,0.00449312,6.11e-06]},{"kind":"login_fail","risk":0.45956454,"posterior":[0.54043546,0.1146483,0.33731747,0.00742061,0.00017815]},{"kind":"read_object","risk":0.04637894,"posterior":[0.95362106,0.0203384,0.01676565,0.00844823,0.00082666]},{"kind":"bulk_download","risk":0.30312961,"posterior":[0.69687039,0.0452321,0.04712517,0.06619275,0.14457958]},{"kind":"list_objects","risk":0.08785525,"posterior":[0.91214475,0.0335127,0.00538533,0.01487332,0.0340839]},{"kind":"list_objects","risk":0.03307901,"posterior":[0.96692099,0.02299339,0.00087159,0.00262942,0.00658462]},{"kind":"read_object","risk":0.00758907,"posterior":[0.99241093,0.00356352,0.00013244,0.00026623,0.00362687]},{"kind":"read_object","risk":0.00386833,"posterior":[0.99613167,0.00192064,1.98e-05,3.347e-05,0.00189442]},{"kind":"read_object","risk":0.00278337,"posterior":[0.99721663,0.00178561,8.98e-06,7.37e-06,0.0009814]},{"kind":"bulk_download","risk":0.12918527,"posterior":[0.87081473,0.02892206,0.00078581,0.0002371,0.0992403]}]},{"id":"s0008","attack_start":null,"events":[{"kind":"logout","risk":0.00126743,"posterior":[0.99873257,0.00126743,0.0,0.0,0.0]},{"kind":"list_objects","risk":0.00877549,"posterior":[0.99122451,0.00876156,1.393e-05,0.0,0.0]},{"kind":"read_object","risk":0.00239313,"posterior":[0.99760687,0.00235422,3.872e-05,1.8e-07,0.0]},{"kind":"logout","risk":0.00144535,"posterior":[0.99855465,0.00141847,2.647e-05,4.1e-07,0.0]},{"kind":"login_ok","risk":0.00303536,"posterior":[0.99696464,0.0030136,2.149e-05,2.6e-07,0.0]},{"kind":"read_object","risk":0.00189142,"posterior":[0.99810858,0.00187737,1.373e-05,3e-07,2e-08]},{"kind":"list_users","risk":0.20048031,"posterior":[0.79951969,0.19999864,0.00047972,1.93e-06,2e-08]},{"kind":"logout","risk":0.01898339,"posterior":[0.98101661,0.01652209,0.00245532,5.96e-06,2e-08]},{"kind":"read_object","risk":0.00319789,"posterior":[0.99680211,0.00302122,0.0001433,3.303e-05,3.4e-07]},{"kind":"list_objects","risk":0.00954333,"posterior":[0.99045667,0.00949091,4.363e-05,8.12e-06,6.6e-07]},{"kind":"login_ok","risk":0.00430062,"posterior":[0.99569938,0.00416677,0.0001329,9e-07,5e-08]},{"kind":"logout","risk":0.00158805,"posterior":[0.99841195,0.00153543,5.119e-05,1.41e-06,1e-08]},{"kind":"list_objects","risk":0.00889562,"posterior":[0.99110438,0.00887372,2.054e-05,1.34e-06,3e-08]},{"kind":"logout","risk":0.00193154,"posterior":[0.99806846,0.00183923,9.199e-05,3e-07,1e-08]},{"kind":"assume_role","risk":0.0187808,"posterior":[0.9812192,0.01633842,0.00218888,0.00025343,6e-08]},{"kind":"list_objects","risk":0.01553632,"posterior":[0.98446368,0.0151046,0.00034009,8.695e-05,4.69e-06]},{"kind":"read_object","risk":0.00298365,"posterior":[0.99701635,0.00288776,7.631e-05,1.234e-05,7.23e-06]},{"kind":"login_ok","risk":0.00327053,"posterior":[0.99672947,0.00322292,4.584e-05,1.46e-06,3e-07]},{"kind":"login_ok","risk":0.0033185,"posterior":[0.9966815,0.00327034,4.765e-05,5e-07,2e-08]},{"kind":"read_secret","risk":0.02546684,"posterior":[0.97453316,0.02307099,0.00227365,0.00012168,5.2e-07]},{"kind":"login_ok","risk":0.0067146,"posterior":[0.9932854,0.0061643,0.00052134,2.848e-05,4.8e-07]},{"kind":"read_object","risk":0.00219408,"posterior":[0.99780592,0.00214112,4.177e-05,9.38e-06,1.81e-06]},{"kind":"list_objects","risk":0.00915334,"posterior":[0.99084666,0.00912395,2.657e-05,2.33e-06,4.9e-07]},{"kind":"read_object","risk":0.00242613,"posterior":[0.99757387,0.00238451,4.068e-05,5.6e-07,3.8e-07]}]},{"id":"s0009","attack_start":15,"events":[{"kind":"read_secret","risk":0.0199005,"posterior":[0.9800995,0.0199005,0.0,0.0,0.0]},{"kind":"read_object","risk":0.00337867,"posterior":[0.99662133,0.00329084,8.783e-05,0.0,0.0]},{"kind":"list_objects","risk":0.00964549,"posterior":[0.99035451,0.00960108,4.248e-05,1.93e-06,0.0]},{"kind":"read_object","risk":0.00246849,"posterior":[0.99753151,0.00242441,4.324e-05,7.3e-07,1.1e-07]},{"kind":"login_ok","risk":0.00319373,"posterior":[0.99680627,0.00315669,3.659e-05,4.4e-07,1e-08]},{"kind":"login_ok","risk":0.00330711,"posterior":[0.99669289,0.00326082,4.593e-05,3.6e-07,0.0]},{"kind":"assume_role","risk":0.02070505,"posterior":[0.97929495,0.01738049,0.00319429,0.00013022,6e-08]},{"kind":"read_object","risk":0.00332906,"posterior":[0.99667094,0.00309896,0.00016875,5.413e-05,7.22e-06]},{"kind":"read_object","risk":0.00191733,"posterior":[0.99808267,0.00188522,1.837e-05,7.05e-06,6.68e-06]},{"kind":"login_fail","risk":0.07630507,"posterior":[0.92369493,0.07191284,0.0043751,1.272e-05,4.42e-06]},{"kind":"list_objects","risk":0.04040355,"posterior":[0.95959645,0.03915726,0.00114355,0.0001017,1.04e-06]},{"kind":"logout","risk":0.00437032,"posterior":[0.99562968,0.00386133,0.00048874,1.927e-05,9.7e-07]},{"kind":"logout","risk":0.00159555,"posterior":[0.99840445,0.0015173,7.17e-05,6.31e-06,2.4e-07]},{"kind":"login_ok","risk":0.00305595,"posterior":[0.99694405,0.00302804,2.684e-05,1.04e-06,3e-08]},{"kind":"login_ok","risk":0.00328606,"posterior":[0.99671394,0.00324242,4.333e-05,3.1e-07,1e-08]},{"kind":"login_fail","risk":0.08348587,"posterior":[0.91651413,0.07584768,0.00762969,8.48e-06,2e-08]},{"kind":"read_object","risk":0.00904535,"posterior":[0.99095465,0.00835347,0.000584,0.00010737,5.1e-07]},{"kind":"list_users","risk":0.24814494,"posterior":[0.75185506,0.24517365,0.00281487,0.00015209,4.32e-06]},{"kind":"assume_role","risk":0.36640382,"posterior":[0.63359618,0.16268915,0.19512799,0.00856286,2.383e-05]},{"kind":"list_objects","risk":0.1318753,"posterior":[0.8681247,0.10352711,0.02078581,0.00735014,0.00021225]},{"kind":"login_fail","risk":0.53717706,"posterior":[0.46282294,0.23055846,0.2987163,0.00756964,0.00033265]},{"kind":"read_secret","risk":0.83395565,"posterior":[0.16604435,0.08749797,0.46353196,0.28006782,0.00285791]},{"kind":"login_fail","risk":0.97606724,"posterior":[0.02393276,0.05003768,0.86832108,0.05532574,0.00238274]}]},{"id":"s0010","attack_start":null,"events":[{"kind":"list_objects","risk":0.00823799,"posterior":[0.99176201,0.00823799,0.0,0.0,0.0]},{"kind":"list_users","risk":0.24628461,"posterior":[0.75371539,0.24437973,0.00190488,0.0,0.0]},{"kind":"read_object","risk":0.02801484,"posterior":[0.97198516,0.02659823,0.00138577,3.084e-05,0.0]},{"kind":"list_users","risk":0.35721954,"posterior":[0.64278046,0.34990858,0.00714969,0.00016023,1.03e-06]},{"kind":"assume_role","risk":0.49230731,"posterior":[0.50769269,0.20738646,0.26817053,0.01673116,1.917e-05]},{"kind":"read_secret","risk":0.81803227,"posterior":[0.18196773,0.08043003,0.42303941,0.30999379,0.00456903]},{"kind":"read_object","risk":0.25063394,"posterior":[0.74936606,0.03109756,0.04330333,0.11159311,0.06463994]},{"kind":"read_object","risk":0.06824523,"posterior":[0.93175477,0.00493483,0.00191354,0.013056,0.04834086]},{"kind":"login_ok","risk":0.00672987,"posterior":[0.99327013,0.00356212,0.00032829,0.00095155,0.00188792]},{"kind":"list_objects","risk":0.01029051,"posterior":[0.98970949,0.00971851,6.72e-05,0.00015762,0.00034719]},{"kind":"login_ok","risk":0.00436321,"posterior":[0.99563679,0.00420024,0.00013901,1.09e-05,1.306e-05]},{"kind":"login_ok","risk":0.00348209,"posterior":[0.99651791,0.00341047,6.917e-05,1.95e-06,5.1e-07]},{"kind":"logout","risk":0.00152664,"posterior":[0.99847336,0.00148648,3.926e-05,8.4e-07,6e-08]},{"kind":"login_ok","risk":0.00304732,"posterior":[0.99695268,0.00302337,2.354e-05,4.1e-07,1e-08]},{"kind":"list_objects","risk":0.0095241,"posterior":[0.9904759,0.00948858,3.494e-05,5.8e-07,1e-08]},{"kind":"read_object","risk":0.00245805,"posterior":[0.99754195,0.00241498,4.253e-05,5.1e-07,4e-08]},{"kind":"read_object","risk":0.00184043,"posterior":[0.99815957,0.00182807,1.171e-05,6e-07,5e-08]},{"kind":"read_object","risk":0.00178805,"posterior":[0.99821195,0.0017795,8.28e-06,2.1e-07,6e-08]},{"kind":"read_object","risk":0.00178362,"posterior":[0.99821638,0.00177547,7.98e-06,1.3e-07,4e-08]},{"kind":"list_objects","risk":0.00899211,"posterior":[0.99100789,0.00897182,2.009e-05,1.9e-07,1e-08]},{"kind":"logout","risk":0.00193878,"posterior":[0.99806122,0.0018456,9.297e-05,2.2e-07,0.0]},{"kind":"logout","risk":0.00141189,"posterior":[0.99858811,0.00138605,2.488e-05,9.6e-07,0.0]},{"kind":"login_ok","risk":0.00303018,"posterior":[0.99696982,0.00300898,2.092e-05,2.8e-07,0.0]},{"kind":"login_ok","risk":0.0032824,"posterior":[0.9967176,0.00323965,4.255e-05,2.1e-07,0.0]},{"kind":"login_ok","risk":0.00332066,"posterior":[0.99667934,0.00327269,4.758e-05,4e-07,0.0]}]},{"id":"s0011","attack_start":7,"events":[{"kind":"list_objects","risk":0.00823799,"posterior":[0.99176201,0.00823799,0.0,0.0,0.0]},{"kind":"read_object","risk":0.00234654,"posterior":[0.99765346,0.00231052,3.602e-05,0.0,0.0]},{"kind":"read_object","risk":0.00183096,"posterior":[0.99816904,0.00181942,1.107e-05,4.7e-07,0.0]},{"kind":"read_object","risk":0.00178722,"posterior":[0.99821278,0.00177878,8.23e-06,1.9e-07,3e-08]},{"kind":"read_object","risk":0.00178353,"posterior":[0.99821647,0.00177542,7.97e-06,1.2e-07,2e-08]},{"kind":"list_objects","risk":0.00899208,"posterior":[0.99100792,0.0089718,2.009e-05,1.9e-07,1e-08]},{"kind":"read_object","risk":0.0024119,"posterior":[0.9975881,0.00237178,3.982e-05,2.8e-07,1e-08]},{"kind":"list_objects","risk":0.00924919,"posterior":[0.99075081,0.00921934,2.893e-05,9.2e-07,1e-08]},{"kind":"login_fail","risk":0.11253674,"posterior":[0.88746326,0.09270448,0.0198258,6.4e-06,6e-08]},{"kind":"read_secret","risk":0.25447271,"posterior":[0.74552729,0.0950652,0.1192887,0.04011413,4.69e-06]},{"kind":"read_secret","risk":0.68838524,"posterior":[0.31161476,0.04933217,0.23498979,0.39076675,0.01329653]},{"kind":"login_fail","risk":0.93573992,"posterior":[0.06426008,0.04801566,0.77017753,0.11096824,0.0065785]},{"kind":"assume_role","risk":0.98756406,"posterior":[0.01243594,0.00850359,0.51385188,0.46229592,0.00291267]},{"kind":"assume_role","risk":0.99601031,"posterior":[0.00398969,0.00243834,0.24028031,0.74775068,0.00554099]},{"kind":"read_secret","risk":0.99736536,"posterior":[0.00263464,0.00125977,0.08144552,0.87122035,0.04343972]}]}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const data = JSON.parse(document.getElementById("bg-data").textContent);
+  const $ = (id) => document.getElementById(id);
+  const svgNS = "http://www.w3.org/2000/svg";
+  const defaultNotes = {
+    login_ok: "Successful sign-in. Common in ordinary sessions.",
+    list_objects: "Lists cloud objects. Usually routine by itself.",
+    read_object: "Reads one cloud object. Often normal activity.",
+    logout: "Session ends or changes context.",
+    list_users: "Enumerates identities. Can be administration or reconnaissance.",
+    login_fail: "Failed sign-in. Repeated failures strengthen credential-abuse evidence.",
+    assume_role: "Switches privileges. Could be authorized administration or escalation.",
+    read_secret: "Accesses a secret. Sensitive, but sometimes legitimate.",
+    bulk_download: "Downloads many objects. Could be backup work or exfiltration."
+  };
+  const defaultStateNames = {
+    normal: "Normal", recon: "Recon", credential: "Credential",
+    privilege: "Privilege", exfil: "Exfiltration"
+  };
+  const notes = data.notes || defaultNotes;
+  const stateNames = data.state_names || defaultStateNames;
+  const phaseLabel = data.phase_label || "attack";
+  const eventFallback = data.event_fallback || "Cloud audit event";
+  let scenarioIndex = Math.max(0, data.scenarios.findIndex(s => s.attack_start !== null));
+  let step = 0;
+  let threshold = data.threshold;
+  let streak = data.streak;
+  let timer = null;
+  let plotLayout = null;
+
+  function nice(name) { return name.replaceAll("_", " "); }
+  function current() { return data.scenarios[scenarioIndex]; }
+  function percent(value) { return (value * 100).toFixed(1) + "%"; }
+  function alertFlags(events) {
+    let count = 0;
+    return events.map(event => {
+      count = event.risk >= threshold ? count + 1 : 0;
+      return count >= streak;
+    });
+  }
+  function stop() {
+    if (timer !== null) clearInterval(timer);
+    timer = null;
+    $("play").textContent = "▶ Play";
+  }
+  function svgElement(name, attributes, parent) {
+    const element = document.createElementNS(svgNS, name);
+    for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+    parent.appendChild(element);
+    return element;
+  }
+
+  function drawPlot(scenario, flags) {
+    const svg = $("risk-plot");
+    const width = Math.max(320, Math.round(svg.clientWidth || 700));
+    const height = 266;
+    const left = 44, right = width - 15, top = 13, bottom = 215;
+    const count = scenario.events.length;
+    const x = i => left + (right - left) * i / Math.max(1, count - 1);
+    const y = risk => bottom - (bottom - top) * risk;
+    plotLayout = { left, right, count, width };
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("aria-label", `${scenario.id}: risk across ${count} events, with alert threshold ${percent(threshold)}`);
+    svg.replaceChildren();
+
+    if (scenario.attack_start !== null) {
+      const attackX = x(scenario.attack_start);
+      svgElement("rect", { x: attackX, y: top, width: Math.max(0, right - attackX),
+        height: bottom - top, fill: "var(--attack-soft)" }, svg);
+    }
+    for (const value of [0, .5, 1]) {
+      const yy = y(value);
+      svgElement("line", { x1: left, x2: right, y1: yy, y2: yy,
+        stroke: "var(--line)", "stroke-width": 1 }, svg);
+      const label = svgElement("text", { x: 2, y: yy + 4,
+        fill: "var(--muted)", "font-size": 11 }, svg);
+      label.textContent = `${Math.round(value * 100)}%`;
+    }
+    const thresholdY = y(threshold);
+    svgElement("line", { x1: left, x2: right, y1: thresholdY, y2: thresholdY,
+      stroke: "var(--threshold)", "stroke-width": 2, "stroke-dasharray": "6 5" }, svg);
+    const points = scenario.events.map((event, i) => `${x(i)},${y(event.risk)}`).join(" ");
+    svgElement("polygon", { points: `${left},${bottom} ${points} ${right},${bottom}`,
+      fill: "var(--risk-soft)" }, svg);
+    svgElement("polyline", { points, fill: "none", stroke: "var(--risk)",
+      "stroke-width": 3, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    if (scenario.attack_start !== null) {
+      const attackX = x(scenario.attack_start);
+      svgElement("line", { x1: attackX, x2: attackX, y1: top, y2: bottom,
+        stroke: "var(--attack)", "stroke-width": 1.5, "stroke-dasharray": "3 4" }, svg);
+      if (attackX > left + 65 && attackX < right - 65) {
+        const label = svgElement("text", { x: attackX + 5, y: top + 12,
+          fill: "var(--attack)", "font-size": 11 }, svg);
+        label.textContent = `${phaseLabel} begins`;
+      }
+    }
+    flags.forEach((flag, i) => {
+      if (flag && (i === 0 || !flags[i - 1])) {
+        svgElement("rect", { x: x(i) - 5, y: y(scenario.events[i].risk) - 5,
+          width: 10, height: 10,
+          transform: `rotate(45 ${x(i)} ${y(scenario.events[i].risk)})`,
+          fill: "var(--bg)", stroke: "var(--alert)", "stroke-width": 2 }, svg);
+      }
+    });
+    svgElement("line", { x1: x(step), x2: x(step), y1: top, y2: bottom,
+      stroke: "var(--text)", "stroke-width": 1, "stroke-opacity": .45 }, svg);
+    svgElement("circle", { cx: x(step), cy: y(scenario.events[step].risk), r: 6,
+      fill: "var(--risk)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    const first = svgElement("text", { x: left, y: height - 10,
+      fill: "var(--muted)", "font-size": 11, "text-anchor": "start" }, svg);
+    first.textContent = "event 1";
+    const last = svgElement("text", { x: right, y: height - 10,
+      fill: "var(--muted)", "font-size": 11, "text-anchor": "end" }, svg);
+    last.textContent = `event ${count}`;
+  }
+
+  function drawStates(posterior) {
+    const list = $("stage-bars");
+    list.replaceChildren();
+    data.states.forEach((name, i) => {
+      const row = document.createElement("div");
+      row.className = "stage-row";
+      const label = document.createElement("span");
+      label.textContent = stateNames[name] || nice(name);
+      const track = document.createElement("div");
+      track.className = "bar-track";
+      const fill = document.createElement("div");
+      fill.className = "bar-fill";
+      fill.style.width = percent(posterior[i]);
+      track.appendChild(fill);
+      const value = document.createElement("strong");
+      value.textContent = `${Math.round(posterior[i] * 100)}%`;
+      row.append(label, track, value);
+      list.appendChild(row);
+    });
+  }
+
+  function drawStream(scenario, flags) {
+    const stream = $("event-stream");
+    stream.replaceChildren();
+    scenario.events.forEach((event, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "event-chip";
+      if (scenario.attack_start !== null && i >= scenario.attack_start) button.classList.add("attack-phase");
+      if (flags[i] && (i === 0 || !flags[i - 1])) button.classList.add("alert-phase");
+      if (i === step) button.classList.add("selected");
+      button.setAttribute("aria-label", `Event ${i + 1}: ${nice(event.kind)}, risk ${percent(event.risk)}${flags[i] ? ", alert" : ""}`);
+      const number = document.createElement("small");
+      number.textContent = `#${i + 1}`;
+      button.append(number, document.createTextNode(nice(event.kind)));
+      button.addEventListener("click", () => { stop(); step = i; render(); });
+      stream.appendChild(button);
+    });
+  }
+
+  function summary(scenario, flags) {
+    const firstAlert = flags.findIndex(Boolean);
+    const start = scenario.attack_start;
+    if (scenario.label === "unlabeled") {
+      return firstAlert < 0 ? "Imported session · no model alert under this rule; ground truth is unknown."
+        : `Imported session · first model alert at event ${firstAlert + 1}; ground truth is unknown.`;
+    }
+    if (start === null) {
+      return firstAlert < 0 ? "Benign session · no alert under this policy."
+        : `Benign session · first alert at event ${firstAlert + 1} (a false positive).`;
+    }
+    if (firstAlert < 0) return `Simulated ${phaseLabel} begins at event ${start + 1} · no alert under this policy.`;
+    if (firstAlert < start) return `Simulated ${phaseLabel} begins at event ${start + 1} · alert at event ${firstAlert + 1}, before the ${phaseLabel} starts.`;
+    return `Simulated ${phaseLabel} begins at event ${start + 1} · first alert at event ${firstAlert + 1} (${firstAlert - start} events later).`;
+  }
+
+  function render() {
+    const scenario = current();
+    step = Math.max(0, Math.min(step, scenario.events.length - 1));
+    const event = scenario.events[step];
+    const flags = alertFlags(scenario.events);
+    $("threshold").value = threshold;
+    $("threshold-value").textContent = percent(threshold);
+    $("streak").value = String(streak);
+    $("step").max = String(scenario.events.length - 1);
+    $("step").value = String(step);
+    $("step-value").textContent = `${step + 1} / ${scenario.events.length}`;
+    $("step-label").textContent = `${scenario.id} · ${scenario.label || (scenario.attack_start === null ? "benign" : phaseLabel)} session · event ${step + 1}`;
+    $("event-name").textContent = nice(event.kind);
+    $("event-note").textContent = notes[event.kind] || eventFallback;
+    $("risk-value").textContent = percent(event.risk);
+    const alert = $("alert-status");
+    alert.textContent = flags[step] ? "ALERT" : "No alert";
+    alert.className = flags[step] ? "is-alert" : "is-safe";
+    $("session-summary").textContent = summary(scenario, flags);
+    drawPlot(scenario, flags);
+    drawStates(event.posterior);
+    drawStream(scenario, flags);
+  }
+
+  const sessionSelect = $("session-select");
+  data.scenarios.forEach((scenario, i) => {
+    const option = document.createElement("option");
+    option.value = String(i);
+    option.textContent = `${scenario.id} · ${scenario.label || (scenario.attack_start === null ? "benign" : phaseLabel)}`;
+    sessionSelect.appendChild(option);
+  });
+  sessionSelect.value = String(scenarioIndex);
+  sessionSelect.addEventListener("change", () => {
+    stop(); scenarioIndex = Number(sessionSelect.value); step = 0; render();
+  });
+  $("threshold").addEventListener("input", event => {
+    threshold = Number(event.target.value); render();
+  });
+  $("streak").addEventListener("change", event => {
+    streak = Number(event.target.value); render();
+  });
+  $("step").addEventListener("input", event => {
+    stop(); step = Number(event.target.value); render();
+  });
+  $("play").addEventListener("click", () => {
+    if (timer !== null) { stop(); return; }
+    if (step >= current().events.length - 1) step = 0;
+    $("play").textContent = "Ⅱ Pause";
+    render();
+    timer = setInterval(() => {
+      if (step >= current().events.length - 1) { stop(); return; }
+      step += 1;
+      render();
+    }, 700);
+  });
+  $("risk-plot").addEventListener("click", event => {
+    if (!plotLayout) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const px = (event.clientX - box.left) * plotLayout.width / box.width;
+    const fraction = (px - plotLayout.left) / (plotLayout.right - plotLayout.left);
+    stop();
+    step = Math.max(0, Math.min(plotLayout.count - 1, Math.round(fraction * (plotLayout.count - 1))));
+    render();
+  });
+  new ResizeObserver(() => drawPlot(current(), alertFlags(current().events))).observe($("risk-plot"));
+  render();
+})();
+
+  </script>
+</body>
+</html>

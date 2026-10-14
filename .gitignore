@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 *.log
 !examples/pilot-output.log
+!research/pilot/example-output.log
 *.rbxlx.lock
 target/
-bin/
+/bin/
+/research/bin/
